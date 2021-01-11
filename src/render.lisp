@@ -95,13 +95,18 @@
   (when *donjon*
     (with-slots (field player-init-pos) *donjon*
       (let* ((yx (array-dimensions field))
-	     (ymax (car yx)) (xmax (cadr yx)))
-	(loop :for y :from 0 :below ymax
-	   :do (loop :for x :from 0 :below xmax
+	     (xmin (getf player-init-pos :xmin))
+	     (xmax (getf player-init-pos :xmax))
+	     (ymin (getf player-init-pos :ymin))
+	     (ymax (getf player-init-pos :ymax))
+	     (field-ymax (car yx)) (field-xmax (cadr yx)))
+	(loop :for y :from 0 :below field-ymax
+	   :do (loop :for x :from 0 :below field-xmax
 		  :do
 		    (render-objs-img x y (aref field y x))
 		    (when (and (null battle)
-			       (find (list x y) player-init-pos :test #'equal))
+			       (and (>= xmax x xmin)
+				    (>= ymax y ymin)))
 		      (select-object *hogememdc* *waku-img*)
 		      (new-trans-blt (* x *obj-w*) (* y *obj-h*) 0 0
 				     128 128 *obj-w* *obj-h*))))))))

@@ -74,16 +74,28 @@
 			    2 +dragon-anime+ ))
     (:yote1   (create-enemy e-type e-pos 3 3 50 300 20 +yote-anime+ ))))
 
+
+(defun get-init-pos (epos xmin xmax ymin ymax)
+  (let ((pos  (list (+ xmin (random (1+ (- xmax xmin))))
+		    (+ ymin (random (1+ (- ymax ymin)))))))
+    (if (find pos epos :test #'equal)
+	(get-init-pos epos xmin xmax ymin ymax)
+	pos)))
+
 ;;敵を配置する
 (defun set-enemies (donjon)
   (with-slots (enemy-init-pos enemies field) donjon
-    (let ((enemy-num (min (length enemy-init-pos) (+ 3 (random (+ 3 (floor (stage donjon) 5))))))) ;;1フロアに出る敵の数
+    (let ((enemy-num (min (length enemy-init-pos) (+ 3 (random (+ 3 (floor (stage donjon) 5)))))) ;;1フロアに出る敵の数
+	  (e-position nil)
+	  (xmin (getf enemy-init-pos :xmin)) (xmax (getf enemy-init-pos :xmax))
+	  (ymin (getf enemy-init-pos :ymin)) (ymax (getf enemy-init-pos :ymax)))
       (loop
 	 :for i :from 0 :to enemy-num
-	 :for pos :in enemy-init-pos
 	 :do
 	   (let* ((e-type (appear-enemy donjon))
+		  (pos (get-init-pos e-position xmin xmax ymin ymax))
 		  (e (create-enemies pos e-type donjon)))
+	     (push pos e-position) ;;かぶらないように記憶しておく
 	     (setf (cell e) (aref field (y e) (x e)))
 		   ;;(aref field (y e) (x e)) :e)
 	     (push e enemies))))))

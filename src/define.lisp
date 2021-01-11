@@ -597,14 +597,17 @@
 
 
 
-(defparameter *test-buki-item*
-  (loop :for n :from 0 :below +w_max+
-     :collect (let ((i (aref *weapondescs* n)))
-		(cond
-		  ((eq :weapon (getf i :type))
-		   (weapon-make i))
-		  ((eq :armour (getf i :type))
-		   (armour-make i))))))
+(defparameter *test-buki-item* nil)
+
+(defun set-test-item-list ()
+  (setf *test-buki-item* 
+	(loop :for n :from 0 :below +w_max+
+	   :collect (let ((i (aref *weapondescs* n)))
+		      (cond
+			((eq :weapon (getf i :type))
+			 (weapon-make i))
+			((eq :armour (getf i :type))
+			 (armour-make i)))))))
 
 ;;武器データ
 ;; (defstruct weapondesc2

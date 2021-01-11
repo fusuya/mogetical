@@ -47,29 +47,29 @@
   (delete-object *buki-img*))
 
 (defun load-images ()
-  (setf *objs-img* (load-image "./img/new-objs-img.bmp" :type :bitmap
+  (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*class-img*  (load-image "./img/class.bmp" :type :bitmap
+	*class-img*  (load-image "../img/class.bmp" :type :bitmap
 			                         :flags '(:load-from-file :create-dib-section))
-      	*arrow-img* (load-image "./img/arrow.bmp" :type :bitmap
+      	*arrow-img* (load-image "../img/arrow.bmp" :type :bitmap
       			     :flags '(:load-from-file :create-dib-section))
-      	*p-img* (load-image "./img/p-ido-anime.bmp" :type :bitmap
+      	*p-img* (load-image "../img/p-ido-anime.bmp" :type :bitmap
       			     :flags '(:load-from-file :create-dib-section))
-      	*p-atk-img* (load-image "./img/p-atk-anime.bmp" :type :bitmap
+      	*p-atk-img* (load-image "../img/p-atk-anime.bmp" :type :bitmap
       			     :flags '(:load-from-file :create-dib-section))
-      	*hammer-img* (load-image "./img/hammer-anime.bmp" :type :bitmap
+      	*hammer-img* (load-image "../img/hammer-anime.bmp" :type :bitmap
       			     :flags '(:load-from-file :create-dib-section))
-      	*anime-monsters-img* (load-image "./img/monsters.bmp" :type :bitmap
+      	*anime-monsters-img* (load-image "../img/monsters.bmp" :type :bitmap
       					 :flags '(:load-from-file :create-dib-section))
-      	*buki-img* (load-image "./img/buki-anime.bmp" :type :bitmap
+      	*buki-img* (load-image "../img/buki-anime.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku-img* (load-image "./img/waku.bmp" :type :bitmap
+	*waku-img* (load-image "../img/waku.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku-ao* (load-image "./img/aowaku.bmp" :type :bitmap
+	*waku-ao* (load-image "../img/aowaku.bmp" :type :bitmap
 			      :flags '(:load-from-file :create-dib-section))
-	*waku-aka* (load-image "./img/akawaku.bmp" :type :bitmap
+	*waku-aka* (load-image "../img/akawaku.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku2-img* (load-image "./img/hoge.bmp" :type :bitmap
+	*waku2-img* (load-image "../img/hoge.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))))
 
 (defun init-mouse-button ()
@@ -88,6 +88,7 @@
 	*mouse* (make-instance 'mouse)
         *donjon* (make-instance 'donjon));;(car *stage-list*)) ;;(nth (length *stage-list*) *stage-list*))
   (create-stage)
+  (set-test-item-list)
   (init-keystate))
 
 ;;効果音ならす
@@ -409,12 +410,13 @@
 
 ;;移動後に攻撃できる敵ゲット
 (defun get-can-atk-enemy-after-move (unit enemies)
-  (let ((x (x unit)) (y (y unit)))
-    (loop
-       :for e :in enemies
-       :do (let ((ex (x e)) (ey (y e)))
-	     (when (= (+ (abs (- ex x)) (abs (- ey y))) 1)
-	       (push e (canatkenemy unit)))))))
+  (with-slots (buki) unit
+    (let ((x (x unit)) (y (y unit)))
+      (loop
+	 :for e :in enemies
+	 :do (let ((ex (x e)) (ey (y e)))
+	       (when (= (rangemax buki) (+ (abs (- ex x)) (abs (- ey y))) (rangemin buki))
+		 (push e (canatkenemy unit))))))))
 
 
 ;;敵に攻撃可能な場所を探す
@@ -691,9 +693,10 @@
     
     (loop
        :for chara :in (party *p*)
-       :for pos :in player-init-pos
-       :do (setf (x chara) (car pos)
-		 (y chara) (cadr pos)
+       :for posx :from (getf player-init-pos :xmin) :to (getf player-init-pos :xmax)
+       :for posy :from (getf player-init-pos :ymin) :to (getf player-init-pos :ymax)
+       :do (setf (x chara) posx
+		 (y chara) posy
 		 (posx chara) (* (x chara) *obj-w*)
 		 (posy chara) (* (y chara) *obj-h*))
 	 (setf (cell chara) (aref field (y chara) (x chara)))
@@ -753,7 +756,8 @@
 		  (y selected) y1)
 	    ;;(push selected (party *p*))
 	    (setf selected nil))
-	   ((find (list x1 y1) (player-init-pos *donjon*) :test #'equal)
+	   ((and (>= (getf (player-init-pos *donjon*) :xmax) x1 (getf (player-init-pos *donjon*) :xmin))
+		 (>= (getf (player-init-pos *donjon*) :ymax) y1 (getf (player-init-pos *donjon*) :ymin)))
 	    (setf (posx selected) (* x1 *obj-w*)
 		  (posy selected) (* y1 *obj-h*)
 		  (x selected) x1
@@ -769,16 +773,16 @@
   (let* ((diffx (- (x selected) (x e)))
 	 (diffy (- (y selected) (y e))))
     (cond
-      ((and (= diffx 1)
+      ((and (>= diffx 1)
 	    (= diffy 0))
        (setf (dir selected) :left))
-      ((and (= diffx -1)
+      ((and (<= diffx -1)
 	    (= diffy 0))
        (setf (dir selected) :right))
-      ((and (= diffy 1)
+      ((and (>= diffy 1)
 	    (= diffx 0))
        (setf (dir selected) :up))
-      ((and (= diffy -1)
+      ((and (<= diffy -1)
 	    (= diffx 0))
        (setf (dir selected) :down)))))
 
@@ -1118,6 +1122,10 @@
 (defwndproc moge-wndproc (hwnd msg wparam lparam)
   (switch msg
     ((const +wm-create+)
+     ;; (setf sb-ext:*invoke-debugger-hook*  
+     ;;  (lambda (condition hook) 
+     ;;    (declare (ignore condition hook))
+     ;; 	(destroy-window hwnd)))
      (set-brush)
      (set-font)
      (load-images)
@@ -1187,22 +1195,23 @@
                              :x 400 :y 100 :width *screen-w* :height *screen-h*))
         (msg (make-msg)))
     ;;(init-game)
-    
-    (show-window hwnd)
-    (update-window hwnd)
-    (do ((done nil))
-        (done)
-      (let ((m (ftw:peek-message msg :remove-msg :remove :error-p nil)))
-        (cond
-          (m
-            ;;(let ((r (get-message msg)))
-            (cond
-              ((= (msg-message msg) (const +wm-quit+))
-               (setf done t))
-              (t
-               (translate-message msg)
-               (dispatch-message msg))))
-          (t
-            (sleep 0.01)
-            (main-game-loop hwnd)))))
-    (msg-wparam msg)))
+    (unwind-protect
+	 (progn
+	   (show-window hwnd)
+	   (update-window hwnd)
+	   (do ((done nil))
+	       (done)
+	     (let ((m (ftw:peek-message msg :remove-msg :remove :error-p nil)))
+	       (cond
+		 (m
+		  ;;(let ((r (get-message msg)))
+		  (cond
+		    ((= (msg-message msg) (const +wm-quit+))
+		     (setf done t))
+		    (t
+		     (translate-message msg)
+		     (dispatch-message msg))))
+		 (t
+		  (sleep 0.01)
+		  (main-game-loop hwnd))))))
+      (unregister-class "MOGE"))))
