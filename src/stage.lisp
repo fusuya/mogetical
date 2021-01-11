@@ -1,4 +1,4 @@
-;; 0:yuka 1:wall
+;; +yuka+ +wall+ +block+ +forest+ +mtlow+ +mthigh+ +water+ +fort+ +kaidan+ +cursor+)
 (defparameter *stage1*
   (list :field (make-array (list 15 15)
                                      :initial-contents
@@ -9,7 +9,7 @@
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
-                                       (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
+                                       (1 3 4 5 6 7 8 0 0 0 0 0 0 0 1)
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
                                        (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)

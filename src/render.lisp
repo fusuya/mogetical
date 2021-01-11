@@ -141,7 +141,7 @@
 
 (defun create-render-button (x1 x2 y1 y2 str strx stry &key (font *font40*))
   (select-object *hmemdc* font)
-  (set-bk-mode *hmemdc* :transparent)
+  ;;(set-bk-mode *hmemdc* :transparent)
   (if (and (>= x2 (x *mouse*) x1)
 	   (>= y2 (y *mouse*) y1))
       (progn (select-object *hmemdc* (get-stock-object :white-brush))
@@ -154,7 +154,7 @@
 
 (defun create-render-button-no-waku (x1 x2 y1 y2 str strx stry &key (font *font40*))
   (select-object *hmemdc* font)
-  (set-bk-mode *hmemdc* :transparent)
+  ;;(set-bk-mode *hmemdc* :transparent)
   (if (and (>= x2 (x *mouse*) x1)
 	   (>= y2 (y *mouse*) y1))
       (progn (select-object *hmemdc* (get-stock-object :white-brush))
@@ -181,6 +181,9 @@
 			"次へ" *item-next-btn-x1* *item-next-btn-y1* :font *font30*)
   (create-render-button *item-prev-btn-x1* *item-prev-btn-x2* *item-prev-btn-y1* *item-prev-btn-y2*
 			"前へ" *item-prev-btn-x1* *item-prev-btn-y1* :font *font30*)
+  (create-render-button *item-decision-x1* *item-decision-x2* *item-decision-y1*
+			*item-decision-y2* "完了" (+ *item-decision-x1* 3)
+			*item-decision-y1* :font *font30*)
   (loop ;;:for buki :in (item *p*)
      :for x = 50
      :for y :from 45 :by 30
@@ -226,7 +229,7 @@
   (with-slots (selected) *mouse*
     (select-object *hmemdc* *font30*)
     (set-text-color *hmemdc* (encode-rgb 255 255 255))
-    (set-bk-mode *hmemdc* :transparent)    
+    ;;(set-bk-mode *hmemdc* :transparent)    
     (text-out *hmemdc* (format nil "~aの現在の武器" (name selected)) 270 5)
     (when (buki selected)
       (text-out *hmemdc* (format nil "名前 : ~a" (name (buki selected))) 270 40)
@@ -253,9 +256,7 @@
   (let* ((num 30))
     (macrolet ((hoge (n)
 		 `(incf ,n 25)))
-      (select-object *hmemdc* *font30*)
-      (set-text-color *hmemdc* (encode-rgb 255 255 255))
-      (set-bk-mode *hmemdc* :transparent)
+      
       (text-out *hmemdc* (format nil "~a" (name p)) x num)
       (text-out *hmemdc* (format nil "Lv:~2d" (level p)) x (hoge num))
       (text-out *hmemdc* (format nil "HP:~2d/~2d" (hp p) (maxhp p)) x (hoge num))
@@ -275,8 +276,12 @@
 (defun render-select-waku ()
   (with-slots (selected) *mouse*
     (when selected
-      (select-object *hogememdc* *waku-ao*)
-      (new-trans-blt (* (x selected) *obj-w*) (* (y selected) *obj-h*) 0 0 32 32 32 32))))
+      (select-object *hmemdc* (create-solid-brush (encode-rgb 255 255 255)))
+      (rectangle *hmemdc* (posx selected) (posy selected) (+ (posx selected) 32)
+		 (+ (posy selected) 32)))))
+      ;;(delete-object (select-object *hmemdc* (create-solid-brush (encode-rgb 255 255 255)))))))
+      ;;(select-object *hogememdc* *waku-ao*)
+      ;;(new-trans-blt (* (x selected) *obj-w*) (* (y selected) *obj-h*) 0 0 32 32 32 32))))
 
 ;;マウスカーソルのある場所に枠付ける
 (defun render-mouse-cursor-waku ()
@@ -284,23 +289,22 @@
 	(y1 (floor (y *mouse*) *obj-h*)))
     (when (>= *map-w* (x *mouse*))
       (select-object *hogememdc* *waku-img*)
-      (new-trans-blt (* x1 *obj-w*) (* y1 *obj-h*) 0 0 128 128 32 32))))
+      (new-trans-blt (* x1 *obj-w*) (* y1 *obj-h*) 0 0 128 128 32 32)
+      )))
 
 ;;攻撃可能な敵に枠つける
 (defun render-can-atk-waku ()
-  (loop
-     :for p :in (party *p*)
-     :do
-       (when (canatkenemy p)
-	 (let ((br (if (eq (atktype (buki p)) :atk)
-		       (select-object *hmemdc* (create-solid-brush (encode-rgb 255 0 0)))
-		       (select-object *hmemdc* (create-solid-brush (encode-rgb 255 254 0))))))
-	 (loop :for e :in (canatkenemy p)
-	    :do
-	      
-	      (rectangle *hmemdc* (posx e) (posy e) (+ (posx e) 32) (+ (posy e) 32) ))
+  (with-slots (selected) *mouse*
+    (when (and selected
+	       (canatkenemy selected))
+      (if (and (buki selected)
+	       (eq (atktype (buki selected)) :atk))
+	  (select-object *hmemdc* (create-solid-brush (encode-rgb 255 0 0)))
+	  (select-object *hmemdc* (create-solid-brush (encode-rgb 255 254 0))))
+      (loop :for e :in (canatkenemy selected)
+	 :do (rectangle *hmemdc* (posx e) (posy e) (+ (posx e) 32) (+ (posy e) 32) )))))
 	  
-	 (delete-object br)))))
+	 ;;(delete-object br)))))
 ;;(select-object *hogememdc* *waku-aka*)
 	      ;;(new-trans-blt (* (x e) *obj-w*) (* (y e) *obj-h*) 0 0 32 32 32 32)))))
   
@@ -313,7 +317,7 @@
 	       (movearea selected))
       (let ((x1 (floor (x *mouse*) *obj-w*))
 	    (y1 (floor (y *mouse*) *obj-h*)))
-	(select-object *hogememdc* *waku-img*)
+	;;(select-object *hogememdc* *waku-img*)
 	(loop :for area :in (movearea selected)
 	   :do (let ((x (car area)) (y (cadr area)))
 		 (cond
@@ -321,8 +325,8 @@
 		    (select-object *hogememdc* *waku-ao*)
 		    (new-trans-blt (* x *obj-w*) (* y *obj-h*) 0 0 32 32 32 32))
 		   (t
-		    (select-object *hogememdc* *waku-img*)
-		    (new-trans-blt (* x *obj-w*) (* y *obj-h*) 0 0 128 128 32 32)))))))))
+		    (select-object *hogememdc* *waku-aka*)
+		    (new-trans-blt (* x *obj-w*) (* y *obj-h*) 0 0 32 32 32 32)))))))))
 
 
 ;;マウスと重なってる敵キャラのステータス表示
@@ -333,25 +337,34 @@
 	     (render-chara-status p *cursor-pos-unit-status-x*))))
 
 ;;マウスと重なってるキャラのステータス表示
-(defun render-chara-status-on-mouse ()
+(defun render-party-status-on-mouse ()
   (loop :for p :in (party *p*)
        :do (when (and (>= (+ (posx p) *obj-w*) (x *mouse*) (posx p))
 		      (>= (+ (posy p) *obj-h*) (y *mouse*) (posy p)))
 	     (render-chara-status p *cursor-pos-unit-status-x* ))))
 
+(defun render-unit-status-on-mouse ()
+  (select-object *hmemdc* *font30*)
+  (set-text-color *hmemdc* (encode-rgb 255 255 255))
+  ;;(set-bk-mode *hmemdc* :transparent)
+  (render-party-status-on-mouse)
+  (render-enemy-status-on-mouse))
+
 (defun render-selected-unit-status ()
   (with-slots (selected) *mouse*
     (when selected
+      (select-object *hmemdc* *font30*)
+      (set-text-color *hmemdc* (encode-rgb 255 255 255))
       (render-chara-status selected *selected-unit-status-x*))))
 
 ;;行動できるウニっとの色付け
 (defun can-action-unit-waku ()
+  (select-object *hmemdc* (create-solid-brush (encode-rgb 157 204 227)))
   (loop
      :for p :in (party *p*)
      :do (when (eq (state p) :action)
-	   (select-object *hmemdc* (create-solid-brush (encode-rgb 157 204 227)))
-	   (rectangle *hmemdc* (posx p) (posy p) (+ (posx p) 32) (+ (posy p) 32))
-	   (delete-object (select-object *hmemdc* (create-solid-brush (encode-rgb 0 0 128)))))))
+	   (rectangle *hmemdc* (posx p) (posy p) (+ (posx p) 32) (+ (posy p) 32)))))
+	   ;;(delete-object (select-object *hmemdc* (create-solid-brush (encode-rgb 157 204 227)))))))
 
 
 ;;出撃キャラを表示
@@ -391,16 +404,8 @@
       (text-out *hmemdc* "敵のターン" 500 5))
   ;;ターン終了ボタン
   (select-object *hmemdc* *font40*)
-  (if (and (>= 660 (x *mouse*) 495)
-	   (>= 490 (y *mouse*) 450)
-	   (eq (turn *p*) :ally))
-      (progn (select-object *hmemdc* (get-stock-object :white-brush))
-	     (rectangle *hmemdc* 495 450 660 490)
-	     (set-text-color *hmemdc* (encode-rgb 0 0 0)))
-      (progn (select-object *hogememdc* *waku-img*)
-	     (new-trans-blt 495 450 0 0 128 128 170 40)
-	     (set-text-color *hmemdc* (encode-rgb 155 255 255))))
-  (text-out *hmemdc* "ターン終了" 500 450))
+  (create-render-button *turn-end-x1* *turn-end-x2* *turn-end-y1*  *turn-end-y2*
+			"ターン終了" *turn-end-x1* *turn-end-y1* :font *font40*))
   
 
 ;;出撃準備画面を表示
@@ -410,8 +415,7 @@
   (render-enemies)
   (render-fight-party)
   (render-selected-unit-status)
-  (render-enemy-status-on-mouse)
-  (render-chara-status-on-mouse)
+  (render-unit-status-on-mouse)
   (render-mouse-cursor-waku)
   (render-select-waku)
   (render-selected-chara)
@@ -423,16 +427,18 @@
   (render-background)
   (render-field t)
   (render-status)
+ 
   (can-action-unit-waku )
+  (render-select-waku)
   (render-can-atk-waku)
   (render-enemies)
   (render-fight-party)
   (render-selected-unit-status)
-  (render-enemy-status-on-mouse)
-  (render-chara-status-on-mouse)
+  (render-unit-status-on-mouse)
   
   (render-mouse-cursor-waku)
   (render-move-waku)
+  
   (render-selected-chara)
   (render-all-damage)
   (render-weapon-change-btn )
@@ -474,7 +480,7 @@
     (when dmg
       (select-object *hmemdc* *font20*)
       
-      (set-bk-mode *hmemdc* :transparent)
+      ;;(set-bk-mode *hmemdc* :transparent)
       ;;縁取り
       (set-text-color *hmemdc* (encode-rgb 0 0 0))
       (text-out *hmemdc* (format nil "~d" (dmg-num dmg)) (- (posx dmg) 2) (posy dmg))
@@ -525,7 +531,7 @@
   (let ((hit1) (hit2) (hit3))
     (render-background)
     (select-object *hmemdc* *font140*)
-    (set-bk-mode *hmemdc* :transparent)
+    ;;(set-bk-mode *hmemdc* :transparent)
     (set-text-color *hmemdc* (encode-rgb 0 155 255))
     (text-out *hmemdc* "もげてぃかる仮" 50 70)
     
@@ -566,7 +572,7 @@
 (defun render-gameover-gamen ()
   (render-background)
   (select-object *hmemdc* *font140*)
-  (set-bk-mode *hmemdc* :transparent)
+  ;;(set-bk-mode *hmemdc* :transparent)
   (set-text-color *hmemdc* (encode-rgb 0 155 255))
   (text-out *hmemdc* "GAME OVER" 50 70)
   (select-object *hogememdc* *objs-img*)
@@ -593,7 +599,7 @@
     (multiple-value-bind (h m s ms) (get-hms time1)
       (render-background)
       (select-object *hmemdc* *font70*)
-      (set-bk-mode *hmemdc* :transparent)
+      ;;(set-bk-mode *hmemdc* :transparent)
       (set-text-color *hmemdc* (encode-rgb 0 155 255))
       (text-out *hmemdc* (format nil "~a は" (name *p*)) 10 10)
       (text-out *hmemdc* (format nil "もげぞうの迷宮を制覇した！") 100 100)
@@ -676,7 +682,7 @@
 (defun render-party-edit-gamen ()
   (render-background)
   (select-object *hmemdc* *font70*)
-  (set-bk-mode *hmemdc* :transparent)
+  ;;(set-bk-mode *hmemdc* :transparent)
   (set-text-color *hmemdc* (encode-rgb 0 155 255))
   (text-out *hmemdc* "初期パーティを作ってください(5人)" 5 10)
   (text-out *hmemdc* "→" 225 260)

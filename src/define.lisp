@@ -205,6 +205,11 @@
 (defparameter *selected-unit-status-x* (+ *map-w* 10))
 (defparameter *cursor-pos-unit-status-x* (+ *selected-unit-status-x* 200))
 
+;;ターンエンドボタン
+(defparameter *turn-end-x1* 495)
+(defparameter *turn-end-x2* 660)
+(defparameter *turn-end-y1* 450)
+(defparameter *turn-end-y2* 490)
 
 ;;装備変更ボタン
 (defparameter *w-change-btn-x1* 495)
@@ -226,6 +231,11 @@
 (defparameter *item-prev-btn-x2* 80)
 (defparameter *item-prev-btn-y1* 490)
 (defparameter *item-prev-btn-y2* 520)
+;;装備変更完了ボタン
+(defparameter *item-decision-x1* 105)
+(defparameter *item-decision-x2* 155)
+(defparameter *item-decision-y1* 520)
+(defparameter *item-decision-y2* 550)
 ;;アイテムリスト表示マックス
 (defparameter *item-show-max* 14)
 
@@ -456,9 +466,9 @@
 ;;movecost= (草原 壁 弱壁 森 低山 高山 水 砦)
 (defparameter *jobdescs*
   (list (make-instance 'jobdesc :name "戦士" :move 3 :img +warrior+
-		       :movecost #(1 -1 -1 3 2 -1 -1 1) :id :warrior)
+		       :movecost #(1 -1 -1 3 2 -1 -1 1 1) :id :warrior)
 	(make-instance 'jobdesc :name "魔術師" :move 2 :img +sorserer+
-		       :movecost #(1 -1 -1 3 3 -1 -1 1) :id :sorcerer)))
+		       :movecost #(1 -1 -1 3 3 -1 -1 1 1) :id :sorcerer)))
 		       
 
 

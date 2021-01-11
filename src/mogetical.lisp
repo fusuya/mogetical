@@ -13,12 +13,12 @@
                                 (create-solid-brush (encode-rgb 255 0 255))))))
 
 (defun set-font ()
-  (setf *font140* (create-font "MSゴシック" :height 140)
+  (setf *font140* (create-font "Cica" :height 140)
 	*font90* (create-font "MSゴシック" :height 90)
 	*font70* (create-font "MSゴシック" :height 70)
-        *font40* (create-font "MSゴシック" :height 40)
-	*font30* (create-font "MSゴシック" :height 30)
-        *font20* (create-font "MSゴシック" :height 25 :width 12 :weight (const +fw-bold+))))
+        *font40* (create-font "Cica" :height 40)
+	*font30* (create-font "Cica" :height 30)
+        *font20* (create-font "Cica" :height 25)));; :width 12 :weight (const +fw-bold+))))
 
 (defun delete-font ()
   (delete-object *font140*)
@@ -42,7 +42,10 @@
   (delete-object *hammer-img*)
   (delete-object *anime-monsters-img*)
   (delete-object *arrow-img*)
+  (delete-object *class-img*)
   (delete-object *waku-img*)
+  (delete-object *waku2-img*)
+  (delete-object *waku-aka*)
   (delete-object *waku-ao*)
   (delete-object *buki-img*))
 
@@ -729,7 +732,8 @@
       ((and left selected
 	    (>= *w-change-btn-y2* y *w-change-btn-y1* )
 	    (>= *w-change-btn-x2* x *w-change-btn-x1* ))
-       (setf (state *p*) :weaponchange))
+       (setf (prestate *P*) :battle-preparation
+	     (state *p*) :weaponchange))
       ((and left ;;選択中のキャラがいない時
 	    (null selected))
        (loop :for p :in (party *p*)
@@ -1009,6 +1013,7 @@
   (if (find :action (enemies *donjon*) :key #'state)
       (enemy-act hwnd)
       (progn (setf (turn *p*) :ally)
+	     (init-action (enemies *donjon*))
 	     (init-action (party *p*)))))
 
 
@@ -1046,6 +1051,13 @@
 	  (select-item nil))
       (cond
 	(right
+	 (setf (canatkenemy selected) nil
+	       (movearea selected) nil
+	       selected nil
+	       (state *p*) (prestate *p*)))
+	((and left ;;決定ボタン
+	      (>= *item-decision-x2* x *item-decision-x1*)
+	      (>= *item-decision-y2* y *item-decision-y1*))
 	 (setf (canatkenemy selected) nil
 	       (movearea selected) nil
 	       selected nil
@@ -1144,7 +1156,8 @@
 	     *hogememdc* (create-compatible-dc hdc)
              *hogebitmap* (create-compatible-bitmap hdc (rect-right *c-rect*) (rect-bottom *c-rect*)))
        (select-object *hmemdc* *hbitmap*)
-       (select-object *hogememdc* *hogebitmap*)))
+       (select-object *hogememdc* *hogebitmap*))
+     (set-bk-mode *hmemdc* :transparent))
     ((const +wm-paint+)
      (with-paint (hwnd hdc)
        (render-game hdc hwnd)))
