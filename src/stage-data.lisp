@@ -27,7 +27,7 @@
 		 :name (nth (random (length *name-list*)) *name-list*) 
 		 :posy (* (cadr e-pos) *obj-h*) :level str
 		 :x (car e-pos) :y (cadr e-pos)
-		 :atk-spd 10 :buki (weapon-make (aref *weapondescs* +w_knuckle+ ))
+		 :atk-spd 10 :buki (weapon-make (aref *weapondescs* +w_wood_sword+))
 		 :moto-w *obj-w* :moto-h *obj-h*
 		 :str str :vit def :hp hp :maxhp hp
 		 :ido-spd ido-spd :expe expe
@@ -74,7 +74,7 @@
 			    2 +dragon-anime+ ))
     (:yote1   (create-enemy e-type e-pos 3 3 50 300 20 +yote-anime+ ))))
 
-
+;;範囲内ランダム初期位置
 (defun get-init-pos (epos xmin xmax ymin ymax)
   (let ((pos  (list (+ xmin (random (1+ (- xmax xmin))))
 		    (+ ymin (random (1+ (- ymax ymin)))))))
@@ -84,8 +84,8 @@
 
 ;;敵を配置する
 (defun set-enemies (donjon)
-  (with-slots (enemy-init-pos enemies field) donjon
-    (let ((enemy-num (min (length enemy-init-pos) (+ 3 (random (+ 3 (floor (stage donjon) 5)))))) ;;1フロアに出る敵の数
+  (with-slots (enemy-init-pos enemies field stage) donjon
+    (let ((enemy-num (min (length enemy-init-pos) (+ 3 (random (+ 3 (floor stage 5)))))) ;;1フロアに出る敵の数
 	  (e-position nil)
 	  (xmin (getf enemy-init-pos :xmin)) (xmax (getf enemy-init-pos :xmax))
 	  (ymin (getf enemy-init-pos :ymin)) (ymax (getf enemy-init-pos :ymax)))
@@ -100,10 +100,48 @@
 		   ;;(aref field (y e) (x e)) :e)
 	     (push e enemies))))))
 
+;;階段セット
+(defun set-kaidan (donjon)
+  (with-slots (field kaidan-init-pos) donjon
+    (let* ((xmin (getf kaidan-init-pos :xmin)) (xmax (getf kaidan-init-pos :xmax))
+	   (ymin (getf kaidan-init-pos :ymin)) (ymax (getf kaidan-init-pos :ymax)))
+      (destructuring-bind (x y)
+	  (get-init-pos nil xmin xmax ymin ymax)
+	(setf (aref field y x) +kaidan+)))))
+
+;;宝箱セット
+(defun set-chest (donjon)
+  (with-slots (field chest-init-pos chest-max chest) donjon
+    (let* ((xmin (getf chest-init-pos :xmin)) (xmax (getf chest-init-pos :xmax))
+	   (ymin (getf chest-init-pos :ymin)) (ymax (getf chest-init-pos :ymax))
+	   (chest-pos nil))
+      (dotimes (i (+ (random chest-max) 10))
+	(destructuring-bind (x y)
+	    (get-init-pos chest-pos xmin xmax ymin ymax)
+	  (push (make-instance 'obj :x x :y y :posx (* x *obj-w*) :posy (* y *obj-h*)
+			       :img +chest+)
+		chest)
+	  (push (list x y) chest-pos))))))
+
+
+;;ドロップアイテムセット
+(defun set-drop-item (donjon)
+  (with-slots (stage drop-item) donjon
+    (cond
+      ((>= 10 stage) (setf drop-item (copy-tree *drop1-10*))))))
 
 (defun create-stage ()
   (let ((stage (copy-tree (nth (random (length *stage-list*)) *stage-list*))))
-    (setf (field *donjon*) (getf stage :field)
+    (setf (field *donjon*) (make-array (list 15 15) :initial-contents (getf stage :field))
 	  (player-init-pos *donjon*) (getf stage :player-init-pos)
-	  (enemy-init-pos *donjon*) (getf stage :enemy-init-pos))
+	  (enemy-init-pos *donjon*)  (getf stage :enemy-init-pos)
+	  (kaidan-init-pos *donjon*) (getf stage :kaidan-init-pos)
+	  (chest-init-pos *donjon*)  (getf stage :chest-init-pos)
+	  (chest-max *donjon*)       (getf stage :chest-max)
+	  (drop-item *donjon*)       nil
+	  (chest *donjon*)           nil
+	  (enemies *donjon*)         nil)
+    (set-drop-item *donjon*)
+    (set-chest *donjon*)
+    (set-kaidan *donjon*)
     (set-enemies *donjon*)))

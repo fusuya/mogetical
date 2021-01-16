@@ -50,7 +50,6 @@
 (defconstant +brigand-ball+ 7)
 (defconstant +dragon-fire+ 8)
 (defconstant +orc-atk+ 9)
-(defconstant +chest+ 10)
 
 ;;敵の攻撃演出時間
 (defparameter *orc-atk-effect-time* 30)
@@ -67,12 +66,6 @@
 (defun set-layered-window-attributes (hwnd crkey balpha dwflags)
   (%set-layered-window-attributes hwnd crkey balpha dwflags))
 
-(defparameter *font140* nil)
-(defparameter *font90* nil)
-(defparameter *font70* nil)
-(defparameter *font40* nil)
-(defparameter *font30* nil)
-(defparameter *font20* nil)
 
 
 
@@ -286,13 +279,20 @@
 (defparameter *item14-y1* 435)
 (defparameter *item14-y2* 465)
 
-(my-enum +yuka+ +wall+ +block+ +forest+ +mtlow+ +mthigh+ +water+ +fort+ +kaidan+ +cursor+)
 
-(my-enum +purple+ +red+ +green+ +blue+ +yellow+ +cyan+ +pink+ )
+
+(my-enum +purple+ +red+ +green+ +blue+ +yellow+ +cyan+ +pink+ +white+)
 
 (my-enum +arrow-right+ +arrow-left+ +arrow-down+ +arrow-up+)
 
 (my-enum +warrior+ +sorserer+)
+
+
+(defclass cell ()
+  ((name  :accessor name  :initform nil :initarg :name)
+   (def   :accessor def   :initform 0   :initarg :def)
+   (heal  :accessor heal  :initform nil :initarg :heal)
+   (avoid :accessor avoid :initform 0   :initarg :avoid)))
 
 (defclass keystate ()
   ((right :accessor right :initform nil :initarg :right)
@@ -316,6 +316,23 @@
 (defvar *mouse* (make-instance 'mouse))
 
 
+(my-enum +yuka+ +wall+ +block+ +forest+ +mtlow+ +mthigh+ +water+ +fort+ +kaidan+ +chest+ +cursor+ +obj-max+)
+
+
+(defparameter *cell-data*
+  (make-array +obj-max+ :initial-contents 
+	      (list (make-instance 'cell :name "草原" :heal nil :def 0 :avoid 0)
+		    (make-instance 'cell :name "壁")
+		    (make-instance 'cell :name "脆い壁")
+		    (make-instance 'cell :name "森"   :heal nil :def 5  :avoid 5)
+		    (make-instance 'cell :name "山"   :heal nil :def 10 :avoid 10)
+		    (make-instance 'cell :name "高山" :heal nil :def 10 :avoid 10)
+		    (make-instance 'cell :name "川"   :heal nil :def 10 :avoid 0)
+		    (make-instance 'cell :name "砦"   :heal 20  :def 20 :avoid 10)
+		    (make-instance 'cell :name "階段" :heal nil :def 0  :avoid 0)
+		    (make-instance 'cell :name "dummy" :heal nil :def 0 :avoid 0)
+		    (make-instance 'cell :name "dummy" :heal nil :def 0 :avoid 0))))
+
 ;;ドロップアイテムリスト
 (defparameter *drop-item*
   '(:boots :atkup :defup))
@@ -327,15 +344,15 @@
    (enemy-init-pos :accessor enemy-init-pos :initform nil :initarg :enemy-init-pos)
    (player-init-pos :accessor player-init-pos :initform nil :initarg :player-init-pos)
    (enemies :accessor enemies :initform nil :initarg :enemies)
-   (path :accessor path :initform nil :initarg :path)
-   (arrow :accessor arrow :initform nil :initarg :arrow)
+   (chest-max :accessor chest-max :initform 0 :initarg :chest-max)
+   (kaidan-init-pos :accessor kaidan-init-pos :initform nil :initarg :kaidan-init-pos)
    (yuka      :accessor yuka       :initform nil  :initarg :yuka) ;;床
    (walls     :accessor walls      :initform nil  :initarg :walls)
    (blocks    :accessor blocks     :initform nil  :initarg :blocks) ;;ブロック
-   (items   :accessor items    :initform nil  :initarg :items) ;;鍵とドア
+   (chest     :accessor chest    :initform nil  :initarg :chest) ;;宝箱
    (stage      :accessor stage       :initform 1   :initarg :stage)
-   (stop-list :accessor stop-list  :initform nil  :initarg :stop-list)
-   (drop-item :accessor drop-item  :initform (copy-tree *drop-item*) :initarg :drop-item))) ;;行き止まりリスト
+   (chest-init-pos :accessor chest-init-pos  :initform nil  :initarg :chest-init-pos)
+   (drop-item :accessor drop-item  :initform nil :initarg :drop-item))) ;;行き止まりリスト
 
 
 ;;ブロックとか
@@ -488,17 +505,12 @@
 	 +job_p_knight+ +job_pirate+ +job_hunter+ +job_thief+ +job_bandit+
 	 +job_d_knight+ +job_shogun+ +job_mercenary+ +job_yusha+ +job_max+)
 
-;;武器 heal:傷薬
-(my-enum +w_iron_sword+ +w_rapier+ +w_spear+ +w_silver_spear+ +w_hand_spear+
-	 +w_bow+ +w_steal_bow+ +w_cross_bow+ +w_ax+ +w_steal_ax+
-	 +w_silver_sword+ +w_armor_killer+ +w_knight_killer+ +w_hammer+
-	 +w_dragon_killer+ +w_live+ +w_heal+ +w_knuckle+
-	 +a_clothes +a_Leather_armor+ +a_Iron_armor+ +a_Leather_shield
-	 a_iron_shield+ +w_max+)
+
 
 (defclass itemdesc ()
   ((name       :accessor name      :initform nil :initarg :name)
    (price      :accessor price     :initform 0   :initarg :price)
+   (new        :accessor new       :initform nil :initarg :new)
    (equiped    :accessor equiped   :initform nil :initarg :equiped)))
 
 (defclass weapondesc (itemdesc)
@@ -528,97 +540,37 @@
 		 :blk (getf item :blk) :price (getf item :price)))
 
 
+;;ブラシ生成
+(defun set-brush ()
+  (setf *brush* (make-array 8 :initial-contents
+                              (list
+                                (create-solid-brush (encode-rgb 128 0 255))
+                                (create-solid-brush (encode-rgb 255 0 0))
+                                (create-solid-brush (encode-rgb 1 255 0))
+                                (create-solid-brush (encode-rgb 0 0 255))
+                                (create-solid-brush (encode-rgb 255 255 0))
+                                (create-solid-brush (encode-rgb 0 255 255))
+                                (create-solid-brush (encode-rgb 255 0 255))
+				(create-solid-brush (encode-rgb 255 255 255))))))
 
+;;font----------------------------------------------------------
+(defparameter *font140* nil)
+(defparameter *font90* nil)
+(defparameter *font70* nil)
+(defparameter *font40* nil)
+(defparameter *font30* nil)
+(defparameter *font20* nil)
+(defparameter *font2* nil)
 
-;武器データ配列
-(defparameter *weapondescs*
-  (make-array +w_max+ :initial-contents
-        (list '(:type :weapon :name "鉄の剣" :damage 5 :atktype :atk
-		     :hit 100 :critical 0 :rangemin 1
-		     :rangemax 1 :price 320)
-              '(:type :weapon :name "レイピア" :damage 5 :atktype :atk
-		     :hit 100 :critical 10 :rangemin 1
-		     :tokkou (list +job_paradin+ +job_a_knight+ +job_s_knight+
-				   +job_shogun+)
-		     :rangemax 1 :price 9999)
-              '(:type :weapon :name "やり" :damage 8 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 1
-			       :rangemax 1 :price 450)
-              '(:type :weapon :name "銀の槍" :damage 12 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 1
-			       :rangemax 1 :price 1800)
-              '(:type :weapon :name "てやり" :damage 7 :atktype :atk
-			       :hit 70 :critical 0 :rangemin 1
-			       :rangemax 2 :price 820)
-              '(:type :weapon :name "ゆみ" :damage 4 :atktype :atk
-			       :hit 90 :critical 0 :rangemin 2
-			       :tokkou (list +job_p_knight+ +job_d_knight+)
-			       :rangemax 2 :price 400)
-              '(:type :weapon :name "鋼の弓" :damage 7 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 2
-			       :tokkou (list +job_p_knight+ +job_d_knight+)
-			       :rangemax 2 :price 560)
-              '(:type :weapon :name "ボウガン" :damage 5 :atktype :atk
-			       :hit 100 :critical 20 :rangemin 2
-			       :tokkou (list +job_p_knight+ +job_d_knight+)
-			       :rangemax 2 :price 950)
-              '(:type :weapon :name "おの" :damage 7 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 1
-			       :rangemax 1 :price 360)
-              '(:type :weapon :name "鋼の斧" :damage 9 :atktype :atk
-			       :hit 70 :critical 0 :rangemin 1
-			       :rangemax 1 :price 550)
-	      '(:type :weapon :name "銀の剣" :damage 12 :atktype :atk
-			       :hit 100 :critical 0 :rangemin 1
-			       :rangemax 1 :price 2000)
-	      '(:type :weapon :name "アーマーキラー" :damage 5 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 1
-			       :tokkou (list +job_a_knight+ +job_shogun+)
-			       :rangemax 1 :price 760)
-	      '(:type :weapon :name "ナイトキラー" :damage 5 :atktype :atk
-			       :hit 90 :critical 0 :rangemin 1
-			       :tokkou (list +job_s_knight+)
-			       :rangemax 1 :price 820)
-	      '(:type :weapon :name "ハンマー" :damage 6 :atktype :atk
-			       :hit 70 :critical 0 :rangemin 1
-			       :tokkou (list +job_a_knight+ +job_shogun+)
-			       :rangemax 1 :price 300)
-	      '(:type :weapon :name "ドラゴンキラー" :damage 6 :atktype :atk
-			       :hit 80 :critical 0 :rangemin 1
-			       :tokkou (list +job_d_knight+)
-			       :rangemax 1 :price 5000)
-	      '(:type :weapon :name "ライブ" :damage 8
-			       :hit 100 :critical 0 :rangemin 1 :atktype :heal
-			       :rangemax 1 :price 99999)
-	      '(:type :weapon :name "傷薬" :damage 8 
-			       :hit 100 :critical 0 :rangemin 1 :atktype :heal
-			       :rangemax 1 :price 220)
-	      '(:type :weapon :name "コブシ" :damage 1 
-			       :hit 100 :critical 0 :rangemin 1 :atktype :atk
-			       :rangemax 1 :price 0)
-	      ;;鎧
-	      '(:type :armour :name "服" :def 1 :blk 0 :price 10)
-	      '(:type :armour :name "皮の鎧" :def 2 :blk 0 :price 50)
-	      '(:type :armour :name "鉄の鎧" :def 3 :blk 0 :price 100)
-	      ;;盾
-	      '(:type :armour :name "皮の盾" :def 0 :blk 5 :price 30)
-	      '(:type :armour :name "鉄の盾" :def 1 :blk 8 :price 80)
-	      )))
-
-
-
-(defparameter *test-buki-item* nil)
-
-(defun set-test-item-list ()
-  (setf *test-buki-item* 
-	(loop :for n :from 0 :below +w_max+
-	   :collect (let ((i (aref *weapondescs* n)))
-		      (cond
-			((eq :weapon (getf i :type))
-			 (weapon-make i))
-			((eq :armour (getf i :type))
-			 (armour-make i)))))))
-
+(defun set-font ()
+  (setf *font140* (create-font "MSゴシック" :height 140)
+        *font90* (create-font "MSゴシック" :height 90)
+        *font70* (create-font "MSゴシック" :height 70)
+        *font40* (create-font "MSゴシック" :height 40)
+        *font30* (create-font "MSゴシック" :height 30)
+        *font20* (create-font "MSゴシック" :height 25)
+	*font2* (create-font "MSゴシック" :height 15)));; :width 12 :weight (const +fw-bold+))))
+;;-------------------------------------------------------------------
 ;;武器データ
 ;; (defstruct weapondesc2
 ;;   (name   nil)

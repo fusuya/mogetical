@@ -88,7 +88,7 @@
 (defun render-objs-img (x y img)
   (select-object *hogememdc* *objs-img*)
   (new-trans-blt (* x *obj-w*) (* y *obj-h*) (* *obj-w* img) 0
-	               *obj-w* *obj-h* *obj-w* *obj-h*))
+		 *obj-w* *obj-h* *obj-w* *obj-h*))
 
 
 (defun render-field (&optional battle)
@@ -114,9 +114,9 @@
 
 
 ;;鍵とか描画
-(defun render-item ()
-  (loop for obj in (items *donjon*)
-     do (render-objs-img (pos obj) (img obj))))
+(defun render-items ()
+  (loop for obj in (chest *donjon*)
+     do (render-objs-img (x obj) (y obj) (img obj))))
 
 ;;武器経験値表示
 (defun render-bugu-exp (exp num)
@@ -193,10 +193,17 @@
 	   (if (>= num (length (item *P*)))
 	       (return)
 	       (let ((buki (nth num (item *P*))))
-		 (when (equiped buki)
-		   (select-object *hmemdc* *font20*)
-		   (set-text-color *hmemdc* (encode-rgb 255 255 255))
-		   (text-out *hmemdc* "E" 34 y)) 
+		 (cond
+		   ((new buki)
+		    (select-object *hmemdc* *font2*)
+		    (set-text-color *hmemdc* (encode-rgb 255 255 255))
+		    (text-out *hmemdc* "N" 35 y)
+		    (text-out *hmemdc* "e" 40 (+ y 8))
+		    (text-out *hmemdc* "w" 45 (+ y 16)))
+		   ((equiped buki)
+		    (select-object *hmemdc* *font20*)
+		    (set-text-color *hmemdc* (encode-rgb 255 255 255))
+		    (text-out *hmemdc* "E" 34 y)))
 		 (create-render-button-no-waku x (+ x 170) y (+ y 25)
 					       (name buki) (+ x 4) y :font *font30*))))))
 
@@ -253,7 +260,8 @@
 
 ;;キャラのステータス表示
 (defun render-chara-status (p x)
-  (let* ((num 30))
+  (let* ((num 30)
+	 (cell (aref *cell-data* (aref (field *donjon*) (y p) (x p)))))
     (macrolet ((hoge (n)
 		 `(incf ,n 25)))
       
@@ -265,6 +273,7 @@
       (text-out *hmemdc* (format nil "exp") x (hoge num))
       (when (buki p)
 	(text-out *hmemdc* (format nil "武器：~a" (name (buki p))) x (hoge num)))
+      (text-out *hmemdc* (format nil "地形:~a" (name cell)) x (hoge num))
       (text-out *hmemdc* (format nil "~a" (if (eq (state p) :action) "行動可" "行動済み")) x (hoge num)))))
       ;; (hoge num)
       ;; (create-render-button x (+ x (* 23 (length (get-buki-name (buki p))))) *st-buki-y* *st-buki-y2*
@@ -276,7 +285,7 @@
 (defun render-select-waku ()
   (with-slots (selected) *mouse*
     (when selected
-      (select-object *hmemdc* (create-solid-brush (encode-rgb 255 255 255)))
+      (select-object *hmemdc* (get-stock-object :white-brush))
       (rectangle *hmemdc* (posx selected) (posy selected) (+ (posx selected) 32)
 		 (+ (posy selected) 32)))))
       ;;(delete-object (select-object *hmemdc* (create-solid-brush (encode-rgb 255 255 255)))))))
@@ -284,13 +293,23 @@
       ;;(new-trans-blt (* (x selected) *obj-w*) (* (y selected) *obj-h*) 0 0 32 32 32 32))))
 
 ;;マウスカーソルのある場所に枠付ける
-(defun render-mouse-cursor-waku ()
-  (let ((x1 (floor (x *mouse*) *obj-w*))
-	(y1 (floor (y *mouse*) *obj-h*)))
+(defun render-mouse-cursor-waku-and-cell-info ()
+  (let* ((x1 (floor (x *mouse*) *obj-w*))
+	 (y1 (floor (y *mouse*) *obj-h*)))
     (when (>= *map-w* (x *mouse*))
       (select-object *hogememdc* *waku-img*)
-      (new-trans-blt (* x1 *obj-w*) (* y1 *obj-h*) 0 0 128 128 32 32)
-      )))
+      (new-trans-blt (* x1 *obj-w*) (* y1 *obj-h*) 0 0 128 128 32 32))
+    (when (and (> *yoko-block-num* x1)
+	       (> *tate-block-num* y1))
+      (let* ((cell (aref *cell-data* (aref (field *donjon*) y1 x1)))
+	     (heal-str (if (heal cell)
+			 (format nil "回復:~d%" (heal cell))
+			 (format nil "回復:なし"))))
+	(select-object *hmemdc* *font30*)
+	(set-text-color *hmemdc* (encode-rgb 255 255 255))
+	(text-out *hmemdc* (format nil "地形:~a" (name cell)) 500 300)
+	(text-out *hmemdc* (format nil "回避:+~d%" (avoid cell)) 500 330)
+	(text-out *hmemdc* heal-str 500 360)))))
 
 ;;攻撃可能な敵に枠つける
 (defun render-can-atk-waku ()
@@ -299,8 +318,8 @@
 	       (canatkenemy selected))
       (if (and (buki selected)
 	       (eq (atktype (buki selected)) :atk))
-	  (select-object *hmemdc* (create-solid-brush (encode-rgb 255 0 0)))
-	  (select-object *hmemdc* (create-solid-brush (encode-rgb 255 254 0))))
+	  (select-object *hmemdc* (aref *brush* +red+))
+	  (select-object *hmemdc* (aref *brush* +yellow+)))
       (loop :for e :in (canatkenemy selected)
 	 :do (rectangle *hmemdc* (posx e) (posy e) (+ (posx e) 32) (+ (posy e) 32) )))))
 	  
@@ -359,7 +378,7 @@
 
 ;;行動できるウニっとの色付け
 (defun can-action-unit-waku ()
-  (select-object *hmemdc* (create-solid-brush (encode-rgb 157 204 227)))
+  (select-object *hmemdc* (aref *brush* +cyan+))
   (loop
      :for p :in (party *p*)
      :do (when (eq (state p) :action)
@@ -387,8 +406,9 @@
 
 ;;装備変更ボタン
 (defun render-weapon-change-btn ()
-  (create-render-button *w-change-btn-x1* *w-change-btn-x2* *w-change-btn-y1* *w-change-btn-y2*
-			"装備変更" 500 400 :font *font40*))
+  (when (selected *mouse*)
+    (create-render-button *w-change-btn-x1* *w-change-btn-x2* *w-change-btn-y1* *w-change-btn-y2*
+			  "装備変更" 500 400 :font *font40*)))
 
 ;;出撃ボタン
 (defun render-ready-btn ()
@@ -414,9 +434,10 @@
   (render-field)
   (render-enemies)
   (render-fight-party)
+  (render-items)
   (render-selected-unit-status)
   (render-unit-status-on-mouse)
-  (render-mouse-cursor-waku)
+  (render-mouse-cursor-waku-and-cell-info)
   (render-select-waku)
   (render-selected-chara)
   (render-weapon-change-btn )
@@ -426,6 +447,7 @@
 (defun render-battle ()
   (render-background)
   (render-field t)
+  (render-items)
   (render-status)
  
   (can-action-unit-waku )
@@ -436,7 +458,7 @@
   (render-selected-unit-status)
   (render-unit-status-on-mouse)
   
-  (render-mouse-cursor-waku)
+  (render-mouse-cursor-waku-and-cell-info )
   (render-move-waku)
   
   (render-selected-chara)
