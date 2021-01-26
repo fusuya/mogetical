@@ -18,18 +18,19 @@
 
 
 
+(defun render-unit (unit)
+  (unless (eq (state unit) :dead) ;;死んでなかったら表示
+    (new-trans-blt (posx unit) (posy unit) 0 (* *obj-h* (img-h unit))
+		   (moto-w unit) (moto-h unit) (w unit) (h unit))))
 
-;;アニメ表示
-(defun render-enemy (e)
-  (when (null (dead e)) ;;死んでなかったら表示
-    (select-object *hogememdc* *anime-monsters-img*)
-    (new-trans-blt (posx e) (posy e) (* (moto-w e) (img e)) (* *obj-h* (img-h e))
-		   (moto-w e) (moto-h e) (w e) (h e))))
+
+
 
 ;;敵表示
 (defun render-enemies ()
+  (select-object *hogememdc* *job-monsters*)
   (loop for e in (enemies *donjon*)
-     do (Render-enemy e)))
+     do (Render-unit e)))
 
 
 
@@ -208,24 +209,37 @@
 					       (name buki) (+ x 4) y :font *font30*))))))
 
 
-(defun render-selecting-item ()
-  (let* ((item (get-item-mouse-pos )))
+;;マウス位置にあるアイテムデータ表示
+(defun render-selecting-item (unit)
+  (let* ((item (get-item-mouse-pos ))
+	 (y 255))
     (text-out *hmemdc* "選択中のアイテム" 270 250)
+    (macrolet ((hoge (n)
+		 `(incf ,n 30)))
     (cond
       ((and item
-	    (eq (type-of item) 'weapondesc))
-       (text-out *hmemdc* (format nil "名前 : ~a" (name item)) 270 285)
-       (text-out *hmemdc* (format nil "攻撃力 : ~a" (damage item)) 270 315)
-       (text-out *hmemdc* (format nil "命中 : ~a" (hit item)) 270 350)
-       (text-out *hmemdc* (format nil "射程 : ~a～~a" (rangemin item)
-				  (rangemax item)) 270 385)
-       (text-out *hmemdc* (format nil "装備者 : ~a" (equiped item)) 270 420))
-      ((and item
-	    (eq (type-of item) 'armourdesc))
-       (text-out *hmemdc* (format nil "名前 : ~a" (name item)) 270 285)
-       (text-out *hmemdc* (format nil "防御力 : ~a" (def item)) 270 315)
-       (text-out *hmemdc* (format nil "ブロック率 : ~a%" (blk item)) 270 350)
-       (text-out *hmemdc* (format nil "装備者 : ~a" (equiped item)) 270 385)))))
+	    (eq (categoly item) :armor))
+       (let ((canequip (if (find (categoly item) (get-job-data (job unit) :canequip) :test #'equal)
+			   "可能" "不可")))
+	 (text-out *hmemdc* (format nil "装備 : ~a" canequip) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "名前 : ~a" (name item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "防御力 : ~a" (def item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "ブロック率 : ~a%" (blk item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "装備者 : ~a" (equiped item)) 270 (hoge y))))
+      (item
+       (let ((atk (cond
+		    ((eq (categoly item) :wand) "魔攻")
+		    ((eq (categoly item) :staff) "回復力")
+		    (t "攻撃力")))
+	     (canequip (if (find (categoly item) (get-job-data (job unit) :canequip) :test #'equal)
+			   "可能" "不可")))
+	 (text-out *hmemdc* (format nil "装備 : ~a" canequip) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "名前 : ~a" (name item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "~a : ~a" atk (damage item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "命中 : ~a" (hit item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "射程 : ~a～~a" (rangemin item)
+				    (rangemax item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "装備者 : ~a" (equiped item)) 270 (hoge y))))))))
 
 
 
@@ -239,17 +253,21 @@
     ;;(set-bk-mode *hmemdc* :transparent)    
     (text-out *hmemdc* (format nil "~aの現在の武器" (name selected)) 270 5)
     (when (buki selected)
+      (let ((atk (cond
+		   ((eq (categoly (buki selected)) :wand) "魔攻")
+		   ((eq (categoly (buki selected)) :staff) "回復力")
+		   (t "攻撃力"))))
       (text-out *hmemdc* (format nil "名前 : ~a" (name (buki selected))) 270 40)
-      (text-out *hmemdc* (format nil "攻撃力 : ~a" (damage (buki selected))) 270 70)
+      (text-out *hmemdc* (format nil "~a : ~a" atk (damage (buki selected))) 270 70)
       (text-out *hmemdc* (format nil "命中 : ~a" (hit (buki selected))) 270 100)
       (text-out *hmemdc* (format nil "射程 : ~a～~a" (rangemin (buki selected))
-				 (rangemax (buki selected))) 270 130))
+				 (rangemax (buki selected))) 270 130)))
     (text-out *hmemdc* (format nil "~aの現在の防具" (name selected)) 570 5)
-    (when (armour selected)
-      (text-out *hmemdc* (format nil "名前 : ~a" (name (armour selected))) 570 40)
-      (text-out *hmemdc* (format nil "防御力 : ~a" (def (armour selected))) 570 70)
-      (text-out *hmemdc* (format nil "ブロック率 : ~a%" (blk (armour selected))) 570 100))
-    (render-selecting-item)
+    (when (armor selected)
+      (text-out *hmemdc* (format nil "名前 : ~a" (name (armor selected))) 570 40)
+      (text-out *hmemdc* (format nil "防御力 : ~a" (def (armor selected))) 570 70)
+      (text-out *hmemdc* (format nil "ブロック率 : ~a%" (blk (armor selected))) 570 100))
+    (render-selecting-item selected)
     (select-object *hogememdc* *waku-img*)
     (new-trans-blt 260 35 0 0 128 128 250 150)
     (new-trans-blt 560 35 0 0 128 128 250 150)
@@ -260,22 +278,30 @@
 
 ;;キャラのステータス表示
 (defun render-chara-status (p x)
+  (with-slots (buki) p
   (let* ((num 30)
 	 (cell (aref *cell-data* (aref (field *donjon*) (y p) (x p)))))
     (macrolet ((hoge (n)
 		 `(incf ,n 25)))
-      
-      (text-out *hmemdc* (format nil "~a" (name p)) x num)
-      (text-out *hmemdc* (format nil "Lv:~2d" (level p)) x (hoge num))
-      (text-out *hmemdc* (format nil "HP:~2d/~2d" (hp p) (maxhp p)) x (hoge num))
-      (text-out *hmemdc* (format nil "攻:~2d" (str p)) x (hoge num))
-      (text-out *hmemdc* (format nil "防:~2d" (vit p)) x (hoge num))
-      (text-out *hmemdc* (format nil "exp") x (hoge num))
-      (when (buki p)
-	(text-out *hmemdc* (format nil "武器：~a" (name (buki p))) x (hoge num)))
-      (text-out *hmemdc* (format nil "地形:~a" (name cell)) x (hoge num))
-      (text-out *hmemdc* (format nil "~a" (if (eq (state p) :action) "行動可" "行動済み")) x (hoge num)))))
-      ;; (hoge num)
+      (let ((makou  0)
+	    (kou 0))
+	(if (or (eq (categoly buki) :wand)
+		(eq (categoly buki) :stagg))
+	    (setf makou (damage buki))
+	    (setf kou (damage buki)))
+	(text-out *hmemdc* (format nil "~a" (name p)) x num)
+	(text-out *hmemdc* (format nil "Lv:~2d" (level p)) x (hoge num))
+	(text-out *hmemdc* (format nil "HP:~2d/~2d" (hp p) (maxhp p)) x (hoge num))
+	(text-out *hmemdc* (format nil "攻:~2d" (+ (str p) kou)) x (hoge num))
+	(text-out *hmemdc* (format nil "防:~2d" (vit p)) x (hoge num))
+	(text-out *hmemdc* (format nil "速:~2d" (agi p)) x (hoge num))
+	(text-out *hmemdc* (format nil "魔攻:~2d" (+ (int p) makou)) x (hoge num))
+	(text-out *hmemdc* (format nil "魔防:~2d" (res p)) x (hoge num))
+	(text-out *hmemdc* (format nil "exp") x (hoge num))
+	(when (buki p)
+	  (text-out *hmemdc* (format nil "武器：~a" (name (buki p))) x (hoge num)))
+	(text-out *hmemdc* (format nil "~a" (if (eq (state p) :action) "行動可" "行動済み")) x (hoge num)))))))
+;; (hoge num)
       ;; (create-render-button x (+ x (* 23 (length (get-buki-name (buki p))))) *st-buki-y* *st-buki-y2*
       ;; 			    (format nil "~a" (get-buki-name (buki p)))
       ;; 			    (+ x 4) *st-buki-y* :font *font20*))))
@@ -388,10 +414,10 @@
 
 ;;出撃キャラを表示
 (defun render-fight-party ()
-  (select-object  *hogememdc* *class-img*)
+  (select-object  *hogememdc* *job-img*)
   (loop
      :for p :in (party *p*)
-     :do (new-trans-blt (posx p) (posy p) 0 (* (img p) 32) 32 32 32 32)))
+     :do (new-trans-blt (posx p) (posy p) 0 (* (img-h p) 32) 32 32 32 32)))
 
 
 ;;選択中のキャラ
@@ -399,8 +425,8 @@
   (with-slots (selected) *mouse*
     (when (and selected
 	       (eq (team selected) :ally))
-      (select-object  *hogememdc* *class-img*)
-      (new-trans-blt (posx selected) (posy selected) 0 (* (img selected) 32) 32 32 32 32))))
+      (select-object  *hogememdc* *job-img*)
+      (new-trans-blt (posx selected) (posy selected) 0 (* (img-h selected) 32) 32 32 32 32))))
 
 
 
@@ -432,9 +458,10 @@
 (defun render-battle-preparation ()
   (render-background)
   (render-field)
+  (render-items)
   (render-enemies)
   (render-fight-party)
-  (render-items)
+  
   (render-selected-unit-status)
   (render-unit-status-on-mouse)
   (render-mouse-cursor-waku-and-cell-info)
@@ -457,7 +484,7 @@
   (render-fight-party)
   (render-selected-unit-status)
   (render-unit-status-on-mouse)
-  
+  (render-get-item-text)
   (render-mouse-cursor-waku-and-cell-info )
   (render-move-waku)
   
@@ -495,6 +522,26 @@
     ;;減ったHP
     (select-object *hmemdc* (aref *brush* +red+))
     (rectangle *hmemdc* hp-w top (+ hp-w (- *hpbar-max* len)) bottom)))
+
+
+;;テキスト描画
+(defun render-text (str posx posy)
+  (select-object *hmemdc* *font20*)
+  ;;縁取り
+  (set-text-color *hmemdc* (encode-rgb 0 0 0))
+  (text-out *hmemdc* (format nil "~a" str) (- posx 2) posy)
+  (text-out *hmemdc* (format nil "~a" str) (+ posx 2) posy)
+  (text-out *hmemdc* (format nil "~a" str) posx (- posy 2))
+  (text-out *hmemdc* (format nil "~a" str) posx (+ posy 2))
+  ;;
+  (set-text-color *hmemdc* (encode-rgb 255 255 255))
+  (text-out *hmemdc* (format nil "~a" str) posx posy))
+
+;;ゲットしたアイテム表示
+(defun render-get-item-text ()
+  (with-slots (getitem) *p*
+    (when getitem
+      (render-text (name getitem) (posx getitem) (posy getitem)))))
 
 ;;ダメージ表示
 (defun render-damage (e)
@@ -641,15 +688,14 @@
 ;;初期パーティ編成画面のボタンの位置
 (defun party-edit-gamen-mouse-pos ()
   (loop
-     :for num = 0 :then num
+     :for num :from 0
      :for btn-pos :in *init-party-edit-gamen-btn-pos-list*
      :do
        (multiple-value-bind (xmin ymin xmax ymax)
 	   (apply #'values btn-pos)
 	 (when (and (>= xmax (x *mouse*) xmin)
 		    (>= ymax (y *mouse*) ymin))
-	   (return-from party-edit-gamen-mouse-pos num))
-	 (incf num))))
+	   (return-from party-edit-gamen-mouse-pos num)))))
 
 ;;選んだ初期パーティ表示
 (defun render-my-init-party-list (mouse)
@@ -667,7 +713,7 @@
 		 (rectangle *hmemdc* x1 y1 x2 y2))
 	       (set-text-color *hmemdc* (encode-rgb 0 0 0)))
 	     (set-text-color *hmemdc* (encode-rgb 255 255 255)))
-       (text-out *hmemdc* (format nil "~a" (getf *show-class* (job chara))) 330 y)))
+       (text-out *hmemdc* (format nil "~a" (get-job-data (job chara) :name)) 330 y)))
 
 ;;初期クラス表示
 (defun render-init-class ()

@@ -23,14 +23,42 @@
 (defparameter *p-atk-img* nil)
 (defparameter *buki-img* nil)
 (defparameter *hammer-img* nil)
-(defparameter *monster-anime* nil)
+(defparameter *job-monsters* nil)
 (defparameter *objs-img* nil)
 (defparameter *arrow-img* nil)
 (defvar *waku-img* nil)
 (defvar *waku2-img* nil)
 (defvar *waku-ao* nil)
 (defvar *waku-aka* nil)
-(defvar *class-img* nil)
+(defparameter *job-img* nil)
+
+(defun load-images ()
+  (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*job-img*  (load-image "../img/class.bmp" :type :bitmap
+			                         :flags '(:load-from-file :create-dib-section))
+      	*arrow-img* (load-image "../img/arrow.bmp" :type :bitmap
+      			     :flags '(:load-from-file :create-dib-section))
+      	*p-img* (load-image "../img/p-ido-anime.bmp" :type :bitmap
+      			     :flags '(:load-from-file :create-dib-section))
+      	*p-atk-img* (load-image "../img/p-atk-anime.bmp" :type :bitmap
+      			     :flags '(:load-from-file :create-dib-section))
+      	*hammer-img* (load-image "../img/hammer-anime.bmp" :type :bitmap
+      			     :flags '(:load-from-file :create-dib-section))
+      	*job-monsters* (load-image "../img/job-monsters.bmp" :type :bitmap
+      					 :flags '(:load-from-file :create-dib-section))
+      	*buki-img* (load-image "../img/buki-anime.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*job-img* (load-image "../img/job-img.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*waku-img* (load-image "../img/waku.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*waku-ao* (load-image "../img/aowaku.bmp" :type :bitmap
+			      :flags '(:load-from-file :create-dib-section))
+	*waku-aka* (load-image "../img/akawaku.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*waku2-img* (load-image "../img/hoge.bmp" :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))))
 
 ;;プレイヤー画像切り替えよう
 (defconstant +down+ 0)
@@ -88,20 +116,16 @@
 (defparameter *images* nil)
 (defparameter *anime-monsters-img* nil)
 
-
-(defparameter *atk-block-wav* "./wav/atk-block.wav")
-(defparameter *atk-enemy-wav* "./wav/atk-enemy.wav")
-(defparameter *damage-wav* "./wav/damage.wav")
-(defparameter *door-wav* "./wav/door.wav")
-(defparameter *get-item-wav* "./wav/get-item.wav")
-(defparameter *get-potion-wav* "./wav/get-potion.wav")
-(defparameter *lvup-wav* "./wav/lvup.wav")
-(defvar *get-orb* "./wav/get-orb.wav")
-(defvar *use-potion* "./wav/use-potion.wav")
-(defvar *atk-arrow* "./wav/atk-arrow.wav")
-(defvar *hit-arrow* "./wav/hit-arrow.wav")
-(defvar *atk-fire* "./wav/atk-fire.wav")
-(defvar *hit-fire* "./wav/hit-fire.wav")
+(defparameter *ax-wav* "../sound/ax.wav")
+(defparameter *sword-wav* "../sound/sword.wav")
+(defparameter *spear-wav* "../sound/spear.wav")
+(defparameter *bow-wav* "../sound/bow.wav")
+(defparameter *wand-wav* "../sound/wand.wav")
+(defparameter *heal-wav* "../sound/heal.wav")
+(defparameter *chest-wav* "../sound/chest.wav")
+(defparameter *move-wav* "../sound/move.wav")
+(defparameter *mouse-move-wav* "../sound/mouse-select.wav")
+(defparameter *select-wav* "../sound/select.wav")
 
 ;;拡大
 (Defparameter *mag-w* 1)
@@ -285,7 +309,7 @@
 
 (my-enum +arrow-right+ +arrow-left+ +arrow-down+ +arrow-up+)
 
-(my-enum +warrior+ +sorserer+)
+
 
 
 (defclass cell ()
@@ -346,7 +370,7 @@
    (enemies :accessor enemies :initform nil :initarg :enemies)
    (chest-max :accessor chest-max :initform 0 :initarg :chest-max)
    (kaidan-init-pos :accessor kaidan-init-pos :initform nil :initarg :kaidan-init-pos)
-   (yuka      :accessor yuka       :initform nil  :initarg :yuka) ;;床
+   (appear-enemy-rate :accessor appear-enemy-rate  :initform nil  :initarg :appear-enemy-rate) ;;床
    (walls     :accessor walls      :initform nil  :initarg :walls)
    (blocks    :accessor blocks     :initform nil  :initarg :blocks) ;;ブロック
    (chest     :accessor chest    :initform nil  :initarg :chest) ;;宝箱
@@ -385,9 +409,9 @@
    (color    :accessor color     :initform :left :initarg :color)
    ))
 
-(defclass buki (obj)
-  ((atk  :accessor atk       :initform 0   :initarg :atk)
-   (name :accessor name      :initform nil :initarg :name)))
+(defclass itemtext (dmg-font)
+  ((name :accessor name      :initform nil :initarg :name)
+   (timer :accessor timer      :initform 0     :initarg :timer)))
 
 ;;プレイヤーと敵で共通で使うやつ
 (defclass common (obj)
@@ -396,11 +420,13 @@
    (agi       :accessor agi       :initform 30    :initarg :agi)
    (vit       :accessor vit       :initform 30    :initarg :vit)
    (str       :accessor str       :initform 30    :initarg :str)
+   (res       :accessor res       :initform 30    :initarg :res)
+   (int       :accessor int       :initform 30    :initarg :int)
    (cell      :accessor cell      :initform nil   :initarg :cell)
    (dead      :accessor dead      :initform nil   :initarg :dead)    ;;死亡判定
    (ido-spd   :accessor ido-spd   :initform 2     :initarg :ido-spd) ;;移動速度
-   (atk-pos-x   :accessor atk-pos-x   :initform 0     :initarg :atk-pos-x)
-   (atk-pos-y   :accessor atk-pos-y   :initform 0     :initarg :atk-pos-y)
+   (atk-pos-x :accessor atk-pos-x   :initform 0     :initarg :atk-pos-x)
+   (atk-pos-y :accessor atk-pos-y   :initform 0     :initarg :atk-pos-y)
    (atk-pos-f :accessor atk-pos-f :initform nil   :initarg :atk-pos-f)
    (dmg       :accessor dmg       :initform nil   :initarg :dmg)     ;;ダメージ表示用
    (dmg-c     :accessor dmg-c     :initform 0     :initarg :dmg-c)   ;;ダメージを受ける間隔
@@ -414,6 +440,7 @@
    (atk-img   :accessor atk-img   :initform 0     :initarg :atk-img) ;;攻撃画像番号 ０～２
    (atk-spd   :accessor atk-spd   :initform 10    :initarg :atk-spd) ;;攻撃速度
    (expe      :accessor expe      :initform 0     :initarg :expe) ;;もらえる経験値orプレイヤーの所持経験値
+   (lvup-exp    :accessor lvup-exp    :initform 100 :initarg :lvup-exp) ;;次のレベルアップに必要な経験値
    ))
 
 ;;適用
@@ -427,7 +454,7 @@
 
 ;;プレイヤー用
 (defclass unit (common)
-  ((lvup-exp    :accessor lvup-exp    :initform 100 :initarg :lvup-exp) ;;次のレベルアップに必要な経験値
+  ( 
    (name        :accessor name        :initform nil :initarg :name)     ;;名前
    (buki        :accessor buki        :initform nil :initarg :buki)
    (movearea    :accessor movearea    :initform nil :initarg :movearea)
@@ -435,7 +462,7 @@
    (movecost    :accessor movecost    :initform nil :initarg :movecost)
    (job         :accessor job         :initform nil :initarg :job)
    (team        :accessor team        :initform nil :initarg :team)
-   (armour      :accessor armour       :initform nil :initarg :armour)
+   (armor       :accessor armor       :initform nil :initarg :armor)
    (accessory   :accessor accessory   :initform nil :initarg :accessory)
    (state       :accessor state       :initform :action :initarg :state)
    (canatkenemy :accessor canatkenemy :initform nil   :initarg :canatkenemy)
@@ -449,6 +476,7 @@
    (showbuki        :accessor showbuki    :initform nil    :initarg :showbuki)
    (item-page       :accessor item-page   :initform 0      :initarg :item-page)
    (movearea        :accessor movearea    :initform nil    :initarg :movearea)
+   (getitem         :accessor getitem     :initform nil    :initarg :getitem)
    (turn            :accessor turn        :initform :ally  :initarg :turn)
    (canatkenemy     :accessor canatkenemy :initform nil    :initarg :canatkenemy)
    (prestate        :accessor prestate    :initform nil    :initarg :prestate)
@@ -461,7 +489,9 @@
   ((name      :accessor name      :initform nil :initarg :name)
    (img       :accessor img       :initform 0   :initarg :img)
    (id        :accessor id        :initform 0   :initarg :id)
+   (canequip  :accessor canequip  :initform nil :initarg :canequip)
    (move      :accessor move      :initform 0   :initarg :move)
+   (lvuprate  :accessor lvuprate  :initform 0   :initarg :lvuprate)
    (movecost  :accessor movecost  :initform nil :initarg :movecost)))
 
 
@@ -478,14 +508,76 @@
   '(:warrior "戦士" :sorcerer "魔術師" :priest "僧侶" :archer "射手" :knight "騎士" :thief "盗賊"
     :p-knight "天馬騎士"))
 
+(my-enum +job_warrior+ +job_sorcerer+ +job_priest+ +job_archer+ +job_s_knight+ +job_thief+
+	 +job_p_knight+
+	 +job_brigand+ +job_dragon+ +job_hydra+ +job_yote1+ +job_orc+ +job_slime+ +job_goron+
+	 +job_max+)
+;;ジョブ
+;; (my-enum +job_lord+ +job_paradin+ +job_s_knight+ +job_a_knight+ +job_archer+
+;; 	 +job_p_knight+ +job_pirate+ +job_hunter+ +job_thief+ +job_bandit+
+;; 	 +job_d_knight+ +job_shogun+ +job_mercenary+ +job_yusha+ +job_max+)
 
-;;movecost= (海 草原 林 山 高山 町 砦 城)
-;;movecost= (草原 壁 弱壁 森 低山 高山 水 砦)
+;;movecost= (草原 壁 弱壁 森 低山 高山 水 砦 階段)
 (defparameter *jobdescs*
-  (list (make-instance 'jobdesc :name "戦士" :move 3 :img +warrior+
-		       :movecost #(1 -1 -1 3 2 -1 -1 1 1) :id :warrior)
-	(make-instance 'jobdesc :name "魔術師" :move 2 :img +sorserer+
-		       :movecost #(1 -1 -1 3 3 -1 -1 1 1) :id :sorcerer)))
+  (make-array +job_max+ :initial-contents
+	      (list (make-instance 'jobdesc :name "戦士" :move 2 :img +job_warrior+
+				   :canequip '(:sword :spear :axe :item :armor)
+				   :lvuprate '(:hp 90 :str 60 :vit 70 :agi 30 :int 10 :res 30)
+				   :movecost #(1 -1 -1 2 2 3 -1 2 1) :id :warrior)
+		    (make-instance 'jobdesc :name "魔術師" :move 2 :img +job_sorcerer+
+				   :canequip '(:wand :item :armor)
+				   :lvuprate '(:hp 60 :str 10 :vit 30 :agi 20 :int 90 :res 60)
+				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :sorcerer)
+		    (make-instance 'jobdesc :name "僧侶" :move 2 :img +job_priest+
+				   :canequip '(:staff :item :armor)
+				   :lvuprate '(:hp 60 :str 10 :vit 30 :agi 30 :int 80 :res 90)
+				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :priest)
+		    (make-instance 'jobdesc :name "射手" :move 2 :img +job_archer+
+				   :canequip '(:bow :item :armor)
+				   :lvuprate '(:hp 70 :str 60 :vit 50 :agi 60 :int 10 :res 40)
+				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :archer)
+		    (make-instance 'jobdesc :name "騎士" :move 3 :img +job_s_knight+
+				   :canequip '(:spear :item :armor)
+				   :lvuprate '(:hp 80 :str 90 :vit 70 :agi 40 :int 10 :res 40)
+				   :movecost #(1 -1 -1 2 2 3 -1 2 1) :id :s_knight)
+		    (make-instance 'jobdesc :name "盗賊" :move 3 :img +job_thief+
+				   :canequip '(:sword :item :armor)
+				   :lvuprate '(:hp 70 :str 60 :vit 50 :agi 80 :int 10 :res 40)
+				   :movecost #(1 -1 -1 2 3 3 -1 3 1) :id :thief)
+		    (make-instance 'jobdesc :name "天馬騎士" :move 3 :img +job_p_knight+
+				   :canequip '(:spear :item :armor)
+				   :lvuprate '(:hp 80 :str 60 :vit 70 :agi 60 :int 10 :res 80)
+				   :movecost #(1 -1 -1 1 1 1 1 1 1) :id :p_knight)
+		    ;;敵
+		    (make-instance 'jobdesc :name "ブリガンド" :move 2 :img +job_brigand+
+				   :canequip '(:bow :item :armor)
+				   :lvuprate '(:hp 70 :str 60 :vit 50 :agi 40 :int 10 :res 40)
+				   :movecost #(1 -1 -1 2 2 3 -1 2 1) :id :brigand)
+		    (make-instance 'jobdesc :name "ドラゴン" :move 3 :img +job_dragon+
+				   :canequip '(:item :armor)
+				   :lvuprate '(:hp 90 :str 60 :vit 80 :agi 30 :int 60 :res 60)
+				   :movecost #(1 -1 -1 2 2 2 2 1 1) :id :dragon)
+		    (make-instance 'jobdesc :name "ヒドラ" :move 2 :img +job_hydra+
+				   :canequip '(:item :armor)
+				   :lvuprate '(:hp 90 :str 50 :vit 80 :agi 20 :int 10 :res 30)
+				   :movecost #(1 -1 -1 2 3 3 1 1 1) :id :hydra)
+		    (make-instance 'jobdesc :name "メタルよていち" :move 3 :img +job_yote1+
+				   :canequip '(:item :armor)
+				   :lvuprate '(:hp 0 :str 20 :vit 90 :agi 90 :int 10 :res 90)
+				   :movecost #(1 -1 -1 1 1 1 1 1 1) :id :yote1)
+		    (make-instance 'jobdesc :name "オーク" :move 2 :img +job_orc+
+				   :canequip '(:spear :item :armor)
+				   :lvuprate '(:hp 70 :str 90 :vit 70 :agi 20 :int 10 :res 20)
+				   :movecost #(1 -1 -1 2 2 3 -1 1 1) :id :orc)
+		    (make-instance 'jobdesc :name "スライム" :move 2 :img +job_slime+
+				   :canequip '(:spear :item :armor)
+				   :lvuprate '(:hp 50 :str 30 :vit 40 :agi 30 :int 10 :res 30)
+				   :movecost #(1 -1 -1 2 2 2 2 1 1) :id :slime)
+		    (make-instance 'jobdesc :name "ゴロン" :move 2 :img +job_goron+
+				   :canequip '(:item :armor)
+				   :lvuprate '(:hp 50 :str 50 :vit 50 :agi 30 :int 10 :res 30)
+				   :movecost #(1 -1 -1 2 2 1 1 1 1) :id :goron)
+		    )))
 		       
 
 
@@ -497,13 +589,43 @@
     (330 210 470 250) (330 260 470 300) (330 310 470 350)
     (540 400 680 470)
     ))
+(defparameter *init-job1-x1* 40)
+(defparameter *init-job1-x2* 180)
+
+(defparameter *init-job1-y1* 110)
+(defparameter *init-job1-y2* 150)
+(defparameter *init-job2-y1* 160)
+(defparameter *init-job2-y2* 200)
+(defparameter *init-job3-y1* 210)
+(defparameter *init-job3-y2* 250)
+(defparameter *init-job4-y1* 260)
+(defparameter *init-job4-y2* 300)
+(defparameter *init-job5-y1* 310)
+(defparameter *init-job5-y2* 350)
+(defparameter *init-job6-y1* 360)
+(defparameter *init-job6-y2* 400)
+(defparameter *init-job7-y1* 410)
+(defparameter *init-job7-y2* 450)
 
 
+(defparameter *init-select-job1-x1* 330)
+(defparameter *init-select-job1-x2* 470)
 
-;;ジョブ
-(my-enum +job_lord+ +job_paradin+ +job_s_knight+ +job_a_knight+ +job_archer+
-	 +job_p_knight+ +job_pirate+ +job_hunter+ +job_thief+ +job_bandit+
-	 +job_d_knight+ +job_shogun+ +job_mercenary+ +job_yusha+ +job_max+)
+(defparameter *init-select-job1-y1* 110)
+(defparameter *init-select-job1-y2* 150)
+(defparameter *init-select-job2-y1* 160)
+(defparameter *init-select-job2-y2* 200)
+(defparameter *init-select-job3-y1* 210)
+(defparameter *init-select-job3-y2* 250)
+(defparameter *init-select-job4-y1* 260)
+(defparameter *init-select-job4-y2* 300)
+(defparameter *init-select-job5-y1* 310)
+(defparameter *init-select-job5-y2* 350)
+
+(defparameter *init-party-edit-end-x1* 540)
+(defparameter *init-party-edit-end-x1* 680)
+(defparameter *init-party-edit-end-x1* 400)
+(defparameter *init-party-edit-end-x1* 470)
 
 
 
@@ -511,32 +633,48 @@
   ((name       :accessor name      :initform nil :initarg :name)
    (price      :accessor price     :initform 0   :initarg :price)
    (new        :accessor new       :initform nil :initarg :new)
-   (equiped    :accessor equiped   :initform nil :initarg :equiped)))
-
-(defclass weapondesc (itemdesc)
-  ((damage     :accessor damage    :initform 0   :initarg :damage)
+   (categoly   :accessor categoly  :initform nil :initarg :categoly)
+   (equiped    :accessor equiped   :initform nil :initarg :equiped)
+   (damage     :accessor damage    :initform 0   :initarg :damage)
    (hit        :accessor hit       :initform 0   :initarg :hit)
    (atktype    :accessor atktype   :initform :atk :initarg :atktype)
    (tokkou     :accessor tokkou    :initform 0   :initarg :tokkou)
    (critical   :accessor critical  :initform 0   :initarg :critical)
    (rangemin   :accessor rangemin  :initform 0   :initarg :rangemin)
-   (rangemax   :accessor rangemax  :initform 0   :initarg :rangemax)))
-
-
-(defclass armourdesc (itemdesc)
-  ((blk        :accessor blk      :initform nil :initarg :blk)
+   (rangemax   :accessor rangemax  :initform 0   :initarg :rangemax)
+   (blk        :accessor blk      :initform nil :initarg :blk)
    (def        :accessor def       :initform 0   :initarg :def)))
 
+(defclass weapondesc (itemdesc)
+  ())
 
+
+(defclass armordesc (itemdesc)
+  ())
+
+
+(defun item-make (item)
+  (let ((cat (getf item :categoly)))
+    (case cat
+      (:armor
+       (make-instance 'armordesc :name (getf item :name) :def (getf item :def)
+		 :categoly cat
+		 :blk (getf item :blk) :price (getf item :price)))
+      (otherwise
+       (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
+		 :hit (getf item :hit) :critical (getf item :critical) :categoly cat
+		 :rangemin (getf item :rangemin) :rangemax (getf item :rangemax)
+		 :price (getf item :price) :atktype (getf item :atktype))))))
 
 (defun weapon-make (item)
   (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
-		 :hit (getf item :hit) :critical (getf item :critical)
+		 :hit (getf item :hit) :critical (getf item :critical) :categoly (getf item :categoly)
 		 :rangemin (getf item :rangemin) :rangemax (getf item :rangemax)
 		 :price (getf item :price) :atktype (getf item :atktype)))
 
-(defun armour-make (item)
-  (make-instance 'armourdesc :name (getf item :name) :def (getf item :def)
+(defun armor-make (item)
+  (make-instance 'armordesc :name (getf item :name) :def (getf item :def)
+		 :categoly (getf item :categoly)
 		 :blk (getf item :blk) :price (getf item :price)))
 
 
@@ -659,10 +797,10 @@
 ;; 			       :hit 100 :critical 0 :rangemin 1 :atktype :atk
 ;; 			       :rangemax 1 :price 0)
 ;; 	      ;;鎧
-;; 	      (armour-make "服" 1 0 10)
-;; 	      (armour-make "皮の鎧" 2 0 50)
-;; 	      (armour-make "鉄の鎧" 3 0 100)
+;; 	      (armor-make "服" 1 0 10)
+;; 	      (armor-make "皮の鎧" 2 0 50)
+;; 	      (armor-make "鉄の鎧" 3 0 100)
 ;; 	      ;;盾
-;; 	      (armour-make "皮の盾" 0 5 30)
-;; 	      (armour-make "鉄の盾" 1 8 80)
+;; 	      (armor-make "皮の盾" 0 5 30)
+;; 	      (armor-make "鉄の盾" 1 8 80)
 ;; 	      )))

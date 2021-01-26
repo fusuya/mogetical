@@ -1,84 +1,76 @@
 
+(defparameter *appear-enemy-rate-list*
+  '((:slime . 100) (:orc . 90) (:brigand . 80) (:hydra . 70) (:goron . 60)
+    (:warrior . 50) (:sorcerer . 40) (:priest . 40) (:archer . 50) (:thief . 40)
+    (:knight . 30) (:pknight . 30) (:dragon . 10)))
+
+
+(defun rate-decf (rate-lst)
+  (loop :for i :in rate-lst
+     :collect (if (> (cdr i) 20)
+		  (cons (car i) (decf (cdr i)))
+		  i)))
+
+
+(defun adjust-appear-enemy ()
+  (setf (appear-enemy-rate *donjon*)
+	(rate-decf (appear-enemy-rate *donjon*))))
+
 ;;出現する敵 階層によって出現率を変える
 (defun appear-enemy (donjon)
-  (let* ((m (random 101))
-	 (slime-rate-max (- 70 (* (stage donjon) 3))) ;;70
-	 (orc-rate-min   (1+ slime-rate-max))
-	 (orc-rate-max   (+ (- 30 (stage donjon)) orc-rate-min))
-	 (bri-rate-min (1+ orc-rate-max))
-	 (bri-rate-max (+ 10 (stage donjon) bri-rate-min))
-	 (hydra-rate-min (1+ bri-rate-max))
-	 (hydra-rate-max (+ 10 (stage donjon) hydra-rate-min))
-	 (dragon-rate-min (1+ hydra-rate-max))
-	 (dragon-rate-max (+ 10 (stage donjon) dragon-rate-min)))
-    ;;(format t "slime:~d~%orc~d~%bri:~d~%hydra:~d~%dragon:~d~%"
-	;;    slime-rate-max orc-rate-max bri-rate-max hydra-rate-max dragon-rate-max)
-    (cond
-      ((>= 1 m 0) :yote1)
-      ((>= slime-rate-max m 2) :slime)
-      ((>= orc-rate-max m orc-rate-min) :orc)
-      ((>= bri-rate-max m bri-rate-min) :brigand)
-      ((>= hydra-rate-max m hydra-rate-min) :hydra)
-      ((>= dragon-rate-max m dragon-rate-min) :dragon)
-      (t :slime))))
+  (weightpick (appear-enemy-rate donjon)))
 
-(defun create-enemy (e-type e-pos hp str def expe ido-spd img-h)
-  (make-instance 'unit :posx (* (car e-pos) *obj-w*)
-		 :name (nth (random (length *name-list*)) *name-list*) 
-		 :posy (* (cadr e-pos) *obj-h*) :level str
-		 :x (car e-pos) :y (cadr e-pos)
-		 :atk-spd 10 :buki (weapon-make (aref *weapondescs* +w_wood_sword+))
-		 :moto-w *obj-w* :moto-h *obj-h*
-		 :str str :vit def :hp hp :maxhp hp
-		 :ido-spd ido-spd :expe expe
-		 :w *obj-w* :h *obj-h*
-		 :w/2 (floor *obj-w* 2) :h/2 (floor *obj-h* 2)
-		 :obj-type e-type :img-h img-h
-		 :movecost (movecost (nth 0 *jobdescs*))
-		 :move (move (nth 0 *jobdescs*))
-		 :team :enemy
-		 :img 1))
+;;階層+-２
+(defun set-enemy-level ()
+  (max 1
+       (+ (stage *donjon*) (if (= (random 2) 0)
+			       (random 3) (- (random 3))))))
 
-;;プレイヤーのいる階層で敵の強さが変わる
-(defun create-enemies (e-pos e-type p)
+(defun create-enemy (e-type e-pos hp str def int res agi expe job)
+  (let* ((level (set-enemy-level))
+	 (e (make-instance 'unit :posx (* (car e-pos) *obj-w*)
+			  :name (nth (random (length *name-list*)) *name-list*) 
+			  :posy (* (cadr e-pos) *obj-h*) :level level
+			  :x (car e-pos) :y (cadr e-pos)
+			  :atk-spd 10 :buki (job-init-weapon job)
+			  :moto-w *obj-w* :moto-h *obj-h*
+			  :str str :vit def :hp hp :maxhp hp :int int :res res
+			  :expe (+ expe level) :agi agi
+			  :w *obj-w* :h *obj-h*
+			  :w/2 (floor *obj-w* 2) :h/2 (floor *obj-h* 2)
+			  :obj-type e-type :img-h job
+			  :team :enemy :job job
+			  :img 1)))
+    (dotimes (i (level e))
+      (status-up e))
+    e))
+
+;;プレイヤーのいる階層で敵の強さが変わる hp str def int res agi expe job
+(defun create-enemies (e-pos e-type)
   (case e-type
-    (:slime   (create-enemy e-type e-pos
-			    (+ 6 (floor (random (stage p)) 2))
-			    (+ 1 (floor (random (stage p)) 2))
-			    (+ 1 (floor (random (stage p)) 2))
-			    (+ 3 (floor (random (stage p)) 3))
-			    1 +slime-anime+))
-    (:orc     (create-enemy e-type e-pos
-			    (+ 10 (floor (random (stage p)) 2))
-			    (+ 4 (floor (random (stage p)) 1.3))
-			    (+ 1 (floor (random (stage p)) 1.4))
-			    (+ 5 (floor (random (stage p)) 2))
-			    1 +orc-anime+ ))
-    (:brigand (create-enemy e-type e-pos
-			    (+ 6 (floor (random (stage p)) 1.2))
-			    (+ 2 (floor (random (stage p)) 2))
-			    (+ 2 (floor (random (stage p)) 2))
-			    (+ 7 (floor (random (stage p)) 2))
-			    1 +brigand-anime+ ))
-    (:hydra   (create-enemy e-type e-pos
-			    (+ 12 (floor (random (stage p)) 1))
-			    (+ 2 (floor (random (stage p)) 2))
-			    (+ 5 (floor (random (stage p)) 1.3))
-			    (+ 10 (floor (random (stage p)) 2))
-			    1 +hydra-anime+ ))
-    (:dragon  (create-enemy e-type e-pos
-			    (+ 20 (floor (random (stage p)) 1.4))
-			    (+ 5 (floor (random (stage p)) 1.3))
-			    (+ 6 (floor (random (stage p)) 1.3))
-			    (+ 20 (floor (random (stage p)) 2))
-			    2 +dragon-anime+ ))
-    (:yote1   (create-enemy e-type e-pos 3 3 50 300 20 +yote-anime+ ))))
+    (:slime    (create-enemy e-type e-pos 6  1  1 1  1  1   3  +job_slime+))
+    (:orc      (create-enemy e-type e-pos 10 4  1 1  1  2   5  +job_orc+))
+    (:brigand  (create-enemy e-type e-pos 6  2  2 7  4  3   7  +job_brigand+ ))
+    (:hydra    (create-enemy e-type e-pos 12 2  5 2  3  3  10  +job_hydra+ ))
+    (:dragon   (create-enemy e-type e-pos 20 5  6 5  6  5  20  +job_dragon+ ))
+    (:yote1    (create-enemy e-type e-pos 3  3 50 3 50 33 300  +job_yote1+ ))
+    (:goron    (create-enemy e-type e-pos 5  2  3 3  3  3   4  +job_goron+ ))
+    (:warrior  (create-enemy e-type e-pos 10 4  5 1  2  2   8  +job_warrior+))
+    (:sorcerer (create-enemy e-type e-pos 5  1  2 7  5  1   8  +job_sorcerer+))
+    (:priest   (create-enemy e-type e-pos 5  1  4 4  8  3   8  +job_priest+))
+    (:thief    (create-enemy e-type e-pos 6  3  3 3  3  9   8  +job_thief+ ))
+    (:archer   (create-enemy e-type e-pos 5  3  3 3  3  3   8  +job_archer+ ))
+    (:knight   (create-enemy e-type e-pos 12 6  4 3  5  3   8  +job_s_knight+ ))
+    (:pknight  (create-enemy e-type e-pos 10 7  2 3  2  2   8  +job_p_knight+ ))
+    ))
 
 ;;範囲内ランダム初期位置
 (defun get-init-pos (epos xmin xmax ymin ymax)
-  (let ((pos  (list (+ xmin (random (1+ (- xmax xmin))))
-		    (+ ymin (random (1+ (- ymax ymin)))))))
-    (if (find pos epos :test #'equal)
+  (let* ((x (+ xmin (random (1+ (- xmax xmin)))))
+	 (y (+ ymin (random (1+ (- ymax ymin)))))
+	 (pos  (list x y) ))
+    (if (or (= (aref (field *donjon*) y x) +kaidan+)
+	    (find pos epos :test #'equal))
 	(get-init-pos epos xmin xmax ymin ymax)
 	pos)))
 
@@ -94,7 +86,7 @@
 	 :do
 	   (let* ((e-type (appear-enemy donjon))
 		  (pos (get-init-pos e-position xmin xmax ymin ymax))
-		  (e (create-enemies pos e-type donjon)))
+		  (e (create-enemies pos e-type)))
 	     (push pos e-position) ;;かぶらないように記憶しておく
 	     (setf (cell e) (aref field (y e) (x e)))
 		   ;;(aref field (y e) (x e)) :e)
@@ -125,10 +117,11 @@
 
 
 ;;ドロップアイテムセット
-(defun set-drop-item (donjon)
+(defun adjust-drop-item-rate (donjon)
   (with-slots (stage drop-item) donjon
-    (cond
-      ((>= 10 stage) (setf drop-item (copy-tree *drop1-10*))))))
+    ;;(when (= (floor stage 2) 0)
+      (setf drop-item
+	    (rate-decf drop-item))))
 
 (defun create-stage ()
   (let ((stage (copy-tree (nth (random (length *stage-list*)) *stage-list*))))
@@ -138,10 +131,9 @@
 	  (kaidan-init-pos *donjon*) (getf stage :kaidan-init-pos)
 	  (chest-init-pos *donjon*)  (getf stage :chest-init-pos)
 	  (chest-max *donjon*)       (getf stage :chest-max)
-	  (drop-item *donjon*)       nil
+	  ;;(drop-item *donjon*)       nil
 	  (chest *donjon*)           nil
 	  (enemies *donjon*)         nil)
-    (set-drop-item *donjon*)
-    (set-chest *donjon*)
     (set-kaidan *donjon*)
+    (set-chest *donjon*)
     (set-enemies *donjon*)))
