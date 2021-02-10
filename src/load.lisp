@@ -1,13 +1,16 @@
-(eval-when (:compile-toplevel :load-toplevel :execute)
+;;(eval-when (:compile-toplevel :load-toplevel :execute)
  (ql:quickload :ftw)
 
  (defpackage moge
    (:use #:cl #:ftw #:cffi))
 
- (in-package moge))
+ (in-package moge)
 
-(load "name.lisp" :external-format :utf-8)
 (load "define.lisp" :external-format :utf-8)
+(load "name.lisp" :external-format :utf-8)
+
+
+(load "mci.lisp" :external-format :utf-8)
 (load "item.lisp" :external-format :utf-8)
 (load "stage.lisp" :external-format :utf-8)
 (load "stage-data.lisp" :external-format :utf-8)

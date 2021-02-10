@@ -16,6 +16,16 @@
                                :flags '(:load-from-file :create-dib-section))))
     imgs))
 
+;;class copy
+(defun shallow-copy-object (original)
+  (let* ((class (class-of original))
+         (copy (allocate-instance class)))
+    (dolist (slot (mapcar #'sb-mop:slot-definition-name (sb-mop:class-slots class)))
+      (when (slot-boundp original slot)
+        (setf (slot-value copy slot)
+              (slot-value original slot))))
+    copy))
+
 (defparameter *atk-width* 8)
 (defparameter *atk-pos-max* (* *atk-width* 3))
 
@@ -97,6 +107,8 @@
 
 
 
+(defparameter *backup-player-data* nil)
+(defparameter *backup-donjon-data* nil)
 ;;(defparameter *tate* 11) ;;マップサイズ
 ;;(defparameter *yoko* 11)
 (defparameter *monsters* nil)
@@ -116,16 +128,40 @@
 (defparameter *images* nil)
 (defparameter *anime-monsters-img* nil)
 
-(defparameter *ax-wav* "../sound/ax.wav")
-(defparameter *sword-wav* "../sound/sword.wav")
-(defparameter *spear-wav* "../sound/spear.wav")
-(defparameter *bow-wav* "../sound/bow.wav")
-(defparameter *wand-wav* "../sound/wand.wav")
-(defparameter *heal-wav* "../sound/heal.wav")
-(defparameter *chest-wav* "../sound/chest.wav")
-(defparameter *move-wav* "../sound/move.wav")
-(defparameter *mouse-move-wav* "../sound/mouse-select.wav")
-(defparameter *select-wav* "../sound/select.wav")
+(defparameter *knuckle-wav*    "../sound/knuckle90.wav")
+(defparameter *ax-wav*         "../sound/ax90.wav")
+(defparameter *sword-wav*      "../sound/sword90.wav")
+(defparameter *spear-wav*      "../sound/spear90.wav")
+(defparameter *bow-wav*        "../sound/bow90.wav")
+(defparameter *wand-wav*       "../sound/wand90.wav")
+(defparameter *heal-wav*       "../sound/heal90.wav")
+(defparameter *chest-wav*      "../sound/chest90.wav")
+(defparameter *move-wav*       "../sound/move90.wav")
+(defparameter *lvup-wav*       "../sound/lvup90.wav")
+(defparameter *mouse-move-wav* "../sound/mouse-select90.wav")
+(defparameter *select-wav*     "../sound/select90.wav")
+;;bgm
+(defparameter *title-bgm-path*      "../sound/titleBGM.wav")
+(defparameter *edit-bgm-path*       "../sound/editBGM.wav")
+(defparameter *prebattle-bgm-path*  "../sound/prebattle.wav")
+(defparameter *battle1-bgm-path*    "../sound/battle1.wav")
+(defparameter *battle2-bgm-path*    "../sound/battle2.wav")
+(defparameter *battle3-bgm-path*    "../sound/battle3.wav")
+(defparameter *battle4-bgm-path*    "../sound/battle4.wav")
+(defparameter *battle5-bgm-path*    "../sound/battle5.wav")
+
+;;alias
+(defparameter *titlebgm*      "title")
+(defparameter *editbgm*       "edit")
+(defparameter *prebattle*     "prebattle")
+(defparameter *battle1bgm*    "battle1")
+(defparameter *battle2bgm*    "battle2")
+(defparameter *battle3bgm*    "battle3")
+(defparameter *battle4bgm*    "battle4")
+(defparameter *battle5bgm*    "battle5")
+(defparameter *bgm* nil)
+
+(defparameter *battle-bgm-list* (list *battle1bgm* *battle2bgm* *battle3bgm* *battle4bgm* *battle5bgm*))
 
 ;;拡大
 (Defparameter *mag-w* 1)
@@ -165,8 +201,8 @@
 (defparameter *h-test* 36)
 
 ;;
-(defparameter *tate* 20)
-(defparameter *yoko* 30)
+(defparameter *tate* 15)
+(defparameter *yoko* 15)
 
 (defparameter *yoko-block-num* 15)
 (defparameter *tate-block-num* 15)
@@ -222,17 +258,33 @@
 (defparameter *selected-unit-status-x* (+ *map-w* 10))
 (defparameter *cursor-pos-unit-status-x* (+ *selected-unit-status-x* 200))
 
+;;タイトル画面スタートボタン
+(defparameter *title-start-x1* 330)
+(defparameter *title-start-x2* 500)
+(defparameter *title-start-y1* 360)
+(defparameter *title-start-y2* 405)
+;;タイトル画面終了ボタン
+(defparameter *title-end-x1* 330)
+(defparameter *title-end-x2* 420)
+(defparameter *title-end-y1* 460)
+(defparameter *title-end-y2* 505)
+;;コンテニューボタン
+(defparameter *continue-x1* 330)
+(defparameter *continue-x2* 500)
+(defparameter *continue-y1* 410)
+(defparameter *continue-y2* 455)
+
 ;;ターンエンドボタン
-(defparameter *turn-end-x1* 495)
-(defparameter *turn-end-x2* 660)
-(defparameter *turn-end-y1* 450)
-(defparameter *turn-end-y2* 490)
+(defparameter *turn-end-x1* 350)
+(defparameter *turn-end-x2* 500)
+(defparameter *turn-end-y1* 480)
+(defparameter *turn-end-y2* 520)
 
 ;;装備変更ボタン
-(defparameter *w-change-btn-x1* 495)
-(defparameter *w-change-btn-x2* 665)
-(defparameter *w-change-btn-y1* 400)
-(defparameter *w-change-btn-y2* 440)
+(defparameter *w-change-btn-x1* 170)
+(defparameter *w-change-btn-x2* 320)
+(defparameter *w-change-btn-y1* 480)
+(defparameter *w-change-btn-y2* 520)
 ;;出撃ボタン
 (defparameter *battle-btn-x1* 495)
 (defparameter *battle-btn-x2* 580)
@@ -309,7 +361,7 @@
 
 (my-enum +arrow-right+ +arrow-left+ +arrow-down+ +arrow-up+)
 
-
+(my-enum +title-bgm+)
 
 
 (defclass cell ()
@@ -343,7 +395,7 @@
 (my-enum +yuka+ +wall+ +block+ +forest+ +mtlow+ +mthigh+ +water+ +fort+ +kaidan+ +chest+ +cursor+ +obj-max+)
 
 
-(defparameter *cell-data*
+(defparameter *celldescs*
   (make-array +obj-max+ :initial-contents 
 	      (list (make-instance 'cell :name "草原" :heal nil :def 0 :avoid 0)
 		    (make-instance 'cell :name "壁")
@@ -440,7 +492,7 @@
    (atk-img   :accessor atk-img   :initform 0     :initarg :atk-img) ;;攻撃画像番号 ０～２
    (atk-spd   :accessor atk-spd   :initform 10    :initarg :atk-spd) ;;攻撃速度
    (expe      :accessor expe      :initform 0     :initarg :expe) ;;もらえる経験値orプレイヤーの所持経験値
-   (lvup-exp    :accessor lvup-exp    :initform 100 :initarg :lvup-exp) ;;次のレベルアップに必要な経験値
+   (lvup-exp  :accessor lvup-exp  :initform 50   :initarg :lvup-exp) ;;次のレベルアップに必要な経験値
    ))
 
 ;;適用
@@ -473,12 +525,13 @@
   ((party           :accessor party       :initform nil    :initarg :party)
    (cursor          :accessor cursor      :initform 0      :initarg :cursor)
    (item            :accessor item        :initform nil    :initarg :item)
-   (showbuki        :accessor showbuki    :initform nil    :initarg :showbuki)
+   (bgm             :accessor bgm         :initform nil    :initarg :bgm)
+   (endtime         :accessor endtime     :initform 0      :initarg :endtime)
+   (starttime       :accessor starttime   :initform 0      :initarg :starttime)
+   (save            :accessor save        :initform nil    :initarg :save)
    (item-page       :accessor item-page   :initform 0      :initarg :item-page)
-   (movearea        :accessor movearea    :initform nil    :initarg :movearea)
    (getitem         :accessor getitem     :initform nil    :initarg :getitem)
    (turn            :accessor turn        :initform :ally  :initarg :turn)
-   (canatkenemy     :accessor canatkenemy :initform nil    :initarg :canatkenemy)
    (prestate        :accessor prestate    :initform nil    :initarg :prestate)
    (state           :accessor state       :initform :title :initarg :state)))     ;;武器
 
@@ -521,29 +574,29 @@
 (defparameter *jobdescs*
   (make-array +job_max+ :initial-contents
 	      (list (make-instance 'jobdesc :name "戦士" :move 2 :img +job_warrior+
-				   :canequip '(:sword :spear :axe :item :armor)
+				   :canequip '(:sword :spear :ax :item :armor)
 				   :lvuprate '(:hp 90 :str 60 :vit 70 :agi 30 :int 10 :res 30)
-				   :movecost #(1 -1 -1 2 2 3 -1 2 1) :id :warrior)
+				   :movecost #(1 -1 -1 2 2 3 -1 1 1) :id :warrior)
 		    (make-instance 'jobdesc :name "魔術師" :move 2 :img +job_sorcerer+
 				   :canequip '(:wand :item :armor)
 				   :lvuprate '(:hp 60 :str 10 :vit 30 :agi 20 :int 90 :res 60)
-				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :sorcerer)
+				   :movecost #(1 -1 -1 2 2 -1 -1 1 1) :id :sorcerer)
 		    (make-instance 'jobdesc :name "僧侶" :move 2 :img +job_priest+
 				   :canequip '(:staff :item :armor)
 				   :lvuprate '(:hp 60 :str 10 :vit 30 :agi 30 :int 80 :res 90)
-				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :priest)
+				   :movecost #(1 -1 -1 2 2 -1 -1 1 1) :id :priest)
 		    (make-instance 'jobdesc :name "射手" :move 2 :img +job_archer+
 				   :canequip '(:bow :item :armor)
 				   :lvuprate '(:hp 70 :str 60 :vit 50 :agi 60 :int 10 :res 40)
-				   :movecost #(1 -1 -1 2 3 -1 -1 3 1) :id :archer)
+				   :movecost #(1 -1 -1 2 2 -1 -1 1 1) :id :archer)
 		    (make-instance 'jobdesc :name "騎士" :move 3 :img +job_s_knight+
 				   :canequip '(:spear :item :armor)
 				   :lvuprate '(:hp 80 :str 90 :vit 70 :agi 40 :int 10 :res 40)
-				   :movecost #(1 -1 -1 2 2 3 -1 2 1) :id :s_knight)
+				   :movecost #(1 -1 -1 2 2 3 -1 1 1) :id :s_knight)
 		    (make-instance 'jobdesc :name "盗賊" :move 3 :img +job_thief+
 				   :canequip '(:sword :item :armor)
 				   :lvuprate '(:hp 70 :str 60 :vit 50 :agi 80 :int 10 :res 40)
-				   :movecost #(1 -1 -1 2 3 3 -1 3 1) :id :thief)
+				   :movecost #(1 -1 -1 2 3 3 2 1 1) :id :thief)
 		    (make-instance 'jobdesc :name "天馬騎士" :move 3 :img +job_p_knight+
 				   :canequip '(:spear :item :armor)
 				   :lvuprate '(:hp 80 :str 60 :vit 70 :agi 60 :int 10 :res 80)
@@ -664,6 +717,7 @@
        (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
 		 :hit (getf item :hit) :critical (getf item :critical) :categoly cat
 		 :rangemin (getf item :rangemin) :rangemax (getf item :rangemax)
+		 :tokkou (getf item :tokkou)
 		 :price (getf item :price) :atktype (getf item :atktype))))))
 
 (defun weapon-make (item)
@@ -708,6 +762,28 @@
         *font30* (create-font "MSゴシック" :height 30)
         *font20* (create-font "MSゴシック" :height 25)
 	*font2* (create-font "MSゴシック" :height 15)));; :width 12 :weight (const +fw-bold+))))
+
+
+
+
+
+
+;;ジョブデータ取得
+(defun get-job-data (job ability)
+  (case ability
+    (:name     (name     (aref *jobdescs* job)))
+    (:move     (move     (aref *jobdescs* job)))
+    (:movecost (movecost (aref *jobdescs* job)))
+    (:canequip (canequip (aref *jobdescs* job)))
+    (:lvuprate (lvuprate (aref *jobdescs* job)))
+    (:img      (img      (aref *jobdescs* job)))))
+
+(defun get-cell-data (cell data)
+  (case data
+    (:heal    (heal  (aref *celldescs* cell)))
+    (:def     (def   (aref *celldescs* cell)))
+    (:avoid   (avoid (aref *celldescs* cell)))
+    (:name    (name  (aref *celldescs* cell)))))
 ;;-------------------------------------------------------------------
 ;;武器データ
 ;; (defstruct weapondesc2

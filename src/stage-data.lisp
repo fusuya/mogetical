@@ -5,11 +5,21 @@
     (:knight . 30) (:pknight . 30) (:dragon . 10)))
 
 
+;;アイテムリストの確率部分を20以上のモノを1下げる
 (defun rate-decf (rate-lst)
   (loop :for i :in rate-lst
      :collect (if (> (cdr i) 20)
 		  (cons (car i) (decf (cdr i)))
 		  i)))
+
+;;絵画進むごとに敵が強い武器装備する確率を上げる
+(defun adjust-enemy-equip-rate ()
+  (setf *warrior-weapon*  (rate-decf *warrior-weapon*)
+	*sorcerar-weapon* (rate-decf *sorcerar-weapon*)
+	*priest-weapon*   (rate-decf *priest-weapon*)
+	*thief-weapon*    (rate-decf *thief-weapon*)
+	*archer-weapon*   (rate-decf *archer-weapon*)
+	*knight-weapon*   (rate-decf *knight-weapon*)))
 
 
 (defun adjust-appear-enemy ()
@@ -26,13 +36,55 @@
        (+ (stage *donjon*) (if (= (random 2) 0)
 			       (random 3) (- (random 3))))))
 
+;;敵生成時に装備してる武器
+(defun enemy-equip-weapon (e-type job)
+  (case e-type
+    ((:slime :orc :brigand :hydra :dragon :yote1 :goron)
+     (job-init-weapon job))
+    (:warrior
+     (item-make (aref *weapondescs* (weightpick *warrior-weapon*))))
+    (:sorcerer
+     (item-make (aref *weapondescs* (weightpick *sorcerar-weapon*))))
+    (:priest
+     (item-make (aref *weapondescs* (weightpick *priest-weapon*))))
+    (:thief
+     (item-make (aref *weapondescs* (weightpick *thief-weapon*))))
+    (:archer
+     (item-make (aref *weapondescs* (weightpick *archer-weapon*))))
+    ((:knight :pknight)
+     (item-make (aref *weapondescs* (weightpick *knight-weapon*))))))
+
+;;敵生成時に装備する防具
+(defun enemy-equip-armor ()
+  (item-make (aref *weapondescs* (weightpick *armor-list*))))
+
+
+;;レヴェルアップ時ステータス上昇
+(defun status-up (atker)
+  (let ((lvup-rate (get-job-data (job atker) :lvuprate)))
+    (when (>= (getf lvup-rate :hp) (random 100))
+      (incf (maxhp atker))
+      (setf (hp atker) (maxhp atker)))
+    (when (>= (getf lvup-rate :str) (random 100))
+      (incf (str atker)))
+    (when (>= (getf lvup-rate :vit) (random 100))
+      (incf (vit atker)))
+    (when (>= (getf lvup-rate :int) (random 100))
+      (incf (int atker)))
+    (when (>= (getf lvup-rate :res) (random 100))
+      (incf (res atker)))
+    (when (>= (getf lvup-rate :agi) (random 100))
+      (incf (agi atker)))))
+
+
 (defun create-enemy (e-type e-pos hp str def int res agi expe job)
   (let* ((level (set-enemy-level))
 	 (e (make-instance 'unit :posx (* (car e-pos) *obj-w*)
 			  :name (nth (random (length *name-list*)) *name-list*) 
 			  :posy (* (cadr e-pos) *obj-h*) :level level
 			  :x (car e-pos) :y (cadr e-pos)
-			  :atk-spd 10 :buki (job-init-weapon job)
+			  :atk-spd 10 :buki (enemy-equip-weapon e-type job)
+			  :armor (enemy-equip-armor)
 			  :moto-w *obj-w* :moto-h *obj-h*
 			  :str str :vit def :hp hp :maxhp hp :int int :res res
 			  :expe (+ expe level) :agi agi
@@ -107,7 +159,7 @@
     (let* ((xmin (getf chest-init-pos :xmin)) (xmax (getf chest-init-pos :xmax))
 	   (ymin (getf chest-init-pos :ymin)) (ymax (getf chest-init-pos :ymax))
 	   (chest-pos nil))
-      (dotimes (i (+ (random chest-max) 10))
+      (dotimes (i (+ (random chest-max) 2))
 	(destructuring-bind (x y)
 	    (get-init-pos chest-pos xmin xmax ymin ymax)
 	  (push (make-instance 'obj :x x :y y :posx (* x *obj-w*) :posy (* y *obj-h*)

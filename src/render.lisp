@@ -1,6 +1,71 @@
+;;時間変換
+(defun get-hms (n)
+  (multiple-value-bind (h m1) (floor n 3600000)
+    (multiple-value-bind (m s1) (floor m1 60000)
+      (multiple-value-bind (s ms1) (floor s1 1000)
+	(multiple-value-bind (ms) (floor ms1 10)
+	  (values h m s ms))))))
 
-
-
+;;アイテムリストからマウス位置のアイテムを帰す
+(defun get-item-mouse-pos ()
+  (with-slots (x y) *mouse*
+    (cond
+      ((and (>= *item-x2* x *item-x1*)
+	    (>= *item1-y2* y *item1-y1*))
+       (nth (+ 0 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item2-y2* y *item2-y1*))
+       (nth (+ 1 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item3-y2* y *item3-y1*))
+       (nth (+ 2 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item4-y2* y *item4-y1*))
+       (nth (+ 3 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item5-y2* y *item5-y1*))
+       (nth (+ 4 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item6-y2* y *item6-y1*))
+       (nth (+ 5 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item7-y2* y *item7-y1*))
+       (nth (+ 6 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item8-y2* y *item8-y1*))
+       (nth (+ 7 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item9-y2* y *item9-y1*))
+       (nth (+ 8 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item10-y2* y *item10-y1*))
+       (nth (+ 9 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item11-y2* y *item11-y1*))
+       (nth (+ 10 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item12-y2* y *item12-y1*))
+       (nth (+ 11 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item13-y2* y *item13-y1*))
+       (nth (+ 12 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      ((and
+	    (>= *item-x2* x *item-x1*)
+	    (>= *item14-y2* y *item14-y1*))
+       (nth (+ 13 (* (item-page *p*) *item-show-max*)) (item *p*)))
+      )))
 
 
 ;;transparent-blt
@@ -19,7 +84,7 @@
 
 
 (defun render-unit (unit)
-  (unless (eq (state unit) :dead) ;;死んでなかったら表示
+  (when (not (eq (state unit) :dead)) ;;死んでなかったら表示
     (new-trans-blt (posx unit) (posy unit) 0 (* *obj-h* (img-h unit))
 		   (moto-w unit) (moto-h unit) (w unit) (h unit))))
 
@@ -63,27 +128,8 @@
 	 (new-trans-blt (x *p*) (y *p*) (* *p-w* (img *p*)) (* *p-h* dir)
 			(moto-w *p*) (moto-h *p*) (w *p*) (h *p*)))))))
 
-;;プレイヤー表示
-(defun render-player ()
-  (cond
-    ;; ((atk-now *p*)
-    ;;  (render-p-atk *buki-img*))
-    ;; ((hammer-now *p*)
-    ;;  (render-p-atk *hammer-img*))
-    (t
-     (select-object *hogememdc* *p-img*)
-     (let ((x (+ (* (car (pos *p*)) *obj-w*) (atk-pos-x *p*)))
-	   (y (+ (* (cadr (pos *p*)) *obj-h*) (atk-pos-y *p*))))
-       (new-trans-blt x y (* *p-w* (img *p*)) (* *p-h* (p-dir-num))
-		      (moto-w *p*) (moto-h *p*) (w *p*) (h *p*))))))
 
 
-(defun render-arrow ()
-  (when (arrow *donjon*)
-    (with-slots (arrow) *donjon*
-      (select-object *hogememdc* (img-src arrow))
-      (new-trans-blt (x arrow) (y arrow) (* *obj-w* (img arrow)) (* *obj-h* (img-h arrow))
-		     *obj-w* *obj-h* *obj-w* *obj-h*))))
 
 ;;*objs-img*の描画
 (defun render-objs-img (x y img)
@@ -239,6 +285,7 @@
 	 (text-out *hmemdc* (format nil "命中 : ~a" (hit item)) 270 (hoge y))
 	 (text-out *hmemdc* (format nil "射程 : ~a～~a" (rangemin item)
 				    (rangemax item)) 270 (hoge y))
+	 (text-out *hmemdc* (format nil "会心 : ~a%" (critical item)) 270 (hoge y))
 	 (text-out *hmemdc* (format nil "装備者 : ~a" (equiped item)) 270 (hoge y))))))))
 
 
@@ -261,7 +308,9 @@
       (text-out *hmemdc* (format nil "~a : ~a" atk (damage (buki selected))) 270 70)
       (text-out *hmemdc* (format nil "命中 : ~a" (hit (buki selected))) 270 100)
       (text-out *hmemdc* (format nil "射程 : ~a～~a" (rangemin (buki selected))
-				 (rangemax (buki selected))) 270 130)))
+				 (rangemax (buki selected))) 270 130)
+      (text-out *hmemdc* (format nil "会心 : ~a%" (critical (buki selected))) 270 160)))
+    
     (text-out *hmemdc* (format nil "~aの現在の防具" (name selected)) 570 5)
     (when (armor selected)
       (text-out *hmemdc* (format nil "名前 : ~a" (name (armor selected))) 570 40)
@@ -269,18 +318,31 @@
       (text-out *hmemdc* (format nil "ブロック率 : ~a%" (blk (armor selected))) 570 100))
     (render-selecting-item selected)
     (select-object *hogememdc* *waku-img*)
-    (new-trans-blt 260 35 0 0 128 128 250 150)
+    (new-trans-blt 260 35 0 0 128 128 250 160)
     (new-trans-blt 560 35 0 0 128 128 250 150)
-    (new-trans-blt 260 280 0 0 128 128 250 250)))
+    (new-trans-blt 260 280 0 0 128 128 250 220)
+    (select-object *hmemdc* *font20*)
+    (text-out *hmemdc* "※捨てる:アイテムにカーソルを合わせて右クリック" 270 500)
+    (text-out *hmemdc* "装備中のアイテムは捨てることができません" 280 525)))
 
 
+;;s1のs2までの割合をバーで表示
+(defun render-bar (left top bot s1 s2 barmax)
+  (let* ((len (floor (* (/ s1 s2) barmax)))
+	 (w (+ left len)))
+    ;;残りHP
+    (select-object *hmemdc* (aref *brush* +green+))
+    (rectangle *hmemdc* left top w bot)
+    ;;減ったHP
+    (select-object *hmemdc* (aref *brush* +red+))
+    (rectangle *hmemdc* w top (+ w (- barmax len)) bot)))
 
 
 ;;キャラのステータス表示
 (defun render-chara-status (p x)
   (with-slots (buki) p
-  (let* ((num 30)
-	 (cell (aref *cell-data* (aref (field *donjon*) (y p) (x p)))))
+  (let* ((num 50))
+	 ;;(cell (aref *celldescs* (aref (field *donjon*) (y p) (x p)))))
     (macrolet ((hoge (n)
 		 `(incf ,n 25)))
       (let ((makou  0)
@@ -292,15 +354,18 @@
 	(text-out *hmemdc* (format nil "~a" (name p)) x num)
 	(text-out *hmemdc* (format nil "Lv:~2d" (level p)) x (hoge num))
 	(text-out *hmemdc* (format nil "HP:~2d/~2d" (hp p) (maxhp p)) x (hoge num))
-	(text-out *hmemdc* (format nil "攻:~2d" (+ (str p) kou)) x (hoge num))
-	(text-out *hmemdc* (format nil "防:~2d" (vit p)) x (hoge num))
-	(text-out *hmemdc* (format nil "速:~2d" (agi p)) x (hoge num))
+	(text-out *hmemdc* (format nil " 攻  :~2d" (+ (str p) kou)) x (hoge num))
+	(text-out *hmemdc* (format nil " 防  :~2d" (vit p)) x (hoge num))
+	(text-out *hmemdc* (format nil " 速  :~2d" (agi p)) x (hoge num))
 	(text-out *hmemdc* (format nil "魔攻:~2d" (+ (int p) makou)) x (hoge num))
 	(text-out *hmemdc* (format nil "魔防:~2d" (res p)) x (hoge num))
-	(text-out *hmemdc* (format nil "exp") x (hoge num))
+	(text-out *hmemdc* (format nil "exp:") x (hoge num))
+	(render-bar (+ x 50) (+ num 27) (+ num 6) (expe p) (lvup-exp p) 100)
 	(when (buki p)
 	  (text-out *hmemdc* (format nil "武器：~a" (name (buki p))) x (hoge num)))
 	(text-out *hmemdc* (format nil "~a" (if (eq (state p) :action) "行動可" "行動済み")) x (hoge num)))))))
+	;;(text-out *hmemdc* (format nil "~a" (cell p)) x (hoge num)))))))
+	;;(text-out *hmemdc* (format nil "x:~a y:~a" (x p) (y p)) x (hoge num)))))))
 ;; (hoge num)
       ;; (create-render-button x (+ x (* 23 (length (get-buki-name (buki p))))) *st-buki-y* *st-buki-y2*
       ;; 			    (format nil "~a" (get-buki-name (buki p)))
@@ -322,20 +387,21 @@
 (defun render-mouse-cursor-waku-and-cell-info ()
   (let* ((x1 (floor (x *mouse*) *obj-w*))
 	 (y1 (floor (y *mouse*) *obj-h*)))
-    (when (>= *map-w* (x *mouse*))
+    (when (and (>= *map-w* (x *mouse*))
+	       (>= *map-h* (y *mouse*)))
       (select-object *hogememdc* *waku-img*)
       (new-trans-blt (* x1 *obj-w*) (* y1 *obj-h*) 0 0 128 128 32 32))
     (when (and (> *yoko-block-num* x1)
 	       (> *tate-block-num* y1))
-      (let* ((cell (aref *cell-data* (aref (field *donjon*) y1 x1)))
+      (let* ((cell (aref *celldescs* (aref (field *donjon*) y1 x1)))
 	     (heal-str (if (heal cell)
 			 (format nil "回復:~d%" (heal cell))
 			 (format nil "回復:なし"))))
 	(select-object *hmemdc* *font30*)
 	(set-text-color *hmemdc* (encode-rgb 255 255 255))
-	(text-out *hmemdc* (format nil "地形:~a" (name cell)) 500 300)
-	(text-out *hmemdc* (format nil "回避:+~d%" (avoid cell)) 500 330)
-	(text-out *hmemdc* heal-str 500 360)))))
+	(text-out *hmemdc* (format nil "地形:~a" (name cell)) 500 350)
+	(text-out *hmemdc* (format nil "回避:+~d%" (avoid cell)) 500 380)
+	(text-out *hmemdc* heal-str 500 410)))))
 
 ;;攻撃可能な敵に枠つける
 (defun render-can-atk-waku ()
@@ -377,15 +443,17 @@
 ;;マウスと重なってる敵キャラのステータス表示
 (defun render-enemy-status-on-mouse ()
   (loop :for p :in (enemies *donjon*)
-       :do (when (and (>= (+ (posx p) *obj-w*) (x *mouse*) (posx p))
-		      (>= (+ (posy p) *obj-h*) (y *mouse*) (posy p)))
+     :do (when (and (not (eq (state p) :dead))
+		    (>= (+ (posx p) *obj-w*) (x *mouse*) (posx p))
+		    (>= (+ (posy p) *obj-h*) (y *mouse*) (posy p)))
 	     (render-chara-status p *cursor-pos-unit-status-x*))))
 
 ;;マウスと重なってるキャラのステータス表示
 (defun render-party-status-on-mouse ()
   (loop :for p :in (party *p*)
-       :do (when (and (>= (+ (posx p) *obj-w*) (x *mouse*) (posx p))
-		      (>= (+ (posy p) *obj-h*) (y *mouse*) (posy p)))
+     :do (when (and (not (eq (state p) :dead))
+		    (>= (+ (posx p) *obj-w*) (x *mouse*) (posx p))
+		    (>= (+ (posy p) *obj-h*) (y *mouse*) (posy p)))
 	     (render-chara-status p *cursor-pos-unit-status-x* ))))
 
 (defun render-unit-status-on-mouse ()
@@ -417,7 +485,7 @@
   (select-object  *hogememdc* *job-img*)
   (loop
      :for p :in (party *p*)
-     :do (new-trans-blt (posx p) (posy p) 0 (* (img-h p) 32) 32 32 32 32)))
+     :do (render-unit p)))
 
 
 ;;選択中のキャラ
@@ -432,97 +500,36 @@
 
 ;;装備変更ボタン
 (defun render-weapon-change-btn ()
-  (when (selected *mouse*)
+  (when (and (selected *mouse*)
+	     (eq (team (selected *mouse*)) :ally))
     (create-render-button *w-change-btn-x1* *w-change-btn-x2* *w-change-btn-y1* *w-change-btn-y2*
-			  "装備変更" 500 400 :font *font40*)))
+			  "装備変更" (+ 3 *w-change-btn-x1*) *w-change-btn-y1* :font *font40*)))
 
 ;;出撃ボタン
 (defun render-ready-btn ()
   (create-render-button *battle-btn-x1* *battle-btn-x2* *battle-btn-y1* *battle-btn-y2*
 			"出撃" 500 450 :font *font40*))
 
+(defun render-pre-battle-explain ()
+  (select-object *hmemdc* *font40*)
+  (set-text-color *hmemdc* (encode-rgb 255 255 255))
+  (text-out *hmemdc* "初期位置を決めてください" 0 480))
+
 ;;いろいろ表示
 (defun render-status ()
-  (select-object *hmemdc* *font20* )
+  (select-object *hmemdc* *font30* )
   (set-text-color *hmemdc* (encode-rgb 255 255 255))
   (if (eq (turn *p*) :ally)
-      (text-out *hmemdc* "プレイヤーのターン" 500 5)
-      (text-out *hmemdc* "敵のターン" 500 5))
+      (text-out *hmemdc* "プレイヤーのターン" 500 3)
+      (text-out *hmemdc* "敵のターン" 500 3))
+  (text-out *hmemdc* "選択中のユニット(右クリで解除)" 480 25)
+  (select-object *hmemdc* *font40*)
+  (text-out *hmemdc* (format nil "地下~3d階" (stage *donjon*)) 0 480)
   ;;ターン終了ボタン
   (select-object *hmemdc* *font40*)
   (create-render-button *turn-end-x1* *turn-end-x2* *turn-end-y1*  *turn-end-y2*
 			"ターン終了" *turn-end-x1* *turn-end-y1* :font *font40*))
   
-
-;;出撃準備画面を表示
-(defun render-battle-preparation ()
-  (render-background)
-  (render-field)
-  (render-items)
-  (render-enemies)
-  (render-fight-party)
-  
-  (render-selected-unit-status)
-  (render-unit-status-on-mouse)
-  (render-mouse-cursor-waku-and-cell-info)
-  (render-select-waku)
-  (render-selected-chara)
-  (render-weapon-change-btn )
-  (render-ready-btn))
-
-;;バトル画面を表示
-(defun render-battle ()
-  (render-background)
-  (render-field t)
-  (render-items)
-  (render-status)
- 
-  (can-action-unit-waku )
-  (render-select-waku)
-  (render-can-atk-waku)
-  (render-enemies)
-  (render-fight-party)
-  (render-selected-unit-status)
-  (render-unit-status-on-mouse)
-  (render-get-item-text)
-  (render-mouse-cursor-waku-and-cell-info )
-  (render-move-waku)
-  
-  (render-selected-chara)
-  (render-all-damage)
-  (render-weapon-change-btn )
-  ;;(render-select-waku)
-  )
-
-;;マップを表示
-(defun render-donjon ()
-  (render-background)
-  (render-field)
-  (render-fight-party)
-  (render-chara-status-on-mouse)
-  (render-select-waku)
-  
-  (render-selected-chara)
-  ;; (render-yuka)
-  ;; (render-block)
-   ;;(render-item)
-   )
-
-
-;;HPバー表示
-(defun render-hpbar (e)
-  (let* ((len (floor (* (/ (hp e) (maxhp e)) *hpbar-max*)))
-	 (left (* (car (pos e)) *obj-w*))
-	 (bottom (* (cadr (pos e)) *obj-h*))
-	 (top (- bottom 8))
-	 (hp-w (+ left len)))
-    ;;残りHP
-    (select-object *hmemdc* (aref *brush* +green+))
-    (rectangle *hmemdc* left top hp-w bottom)
-    ;;減ったHP
-    (select-object *hmemdc* (aref *brush* +red+))
-    (rectangle *hmemdc* hp-w top (+ hp-w (- *hpbar-max* len)) bottom)))
-
 
 ;;テキスト描画
 (defun render-text (str posx posy)
@@ -542,6 +549,8 @@
   (with-slots (getitem) *p*
     (when getitem
       (render-text (name getitem) (posx getitem) (posy getitem)))))
+
+
 
 ;;ダメージ表示
 (defun render-damage (e)
@@ -574,6 +583,72 @@
        ;; 	 (render-hpbar e))))
 
 
+;;出撃準備画面を表示
+(defun render-battle-preparation ()
+  (render-background)
+  (render-field)
+  (render-items)
+  (render-enemies)
+  (render-fight-party)
+  
+  (render-selected-unit-status)
+  (render-unit-status-on-mouse)
+  (render-mouse-cursor-waku-and-cell-info)
+  (render-select-waku)
+  (render-selected-chara)
+  ;;(render-weapon-change-btn)
+  (render-pre-battle-explain)
+  (render-ready-btn))
+
+;;バトル画面を表示
+(defun render-battle ()
+  (render-background)
+  (render-field t)
+  (render-items)
+  (render-status)
+ 
+  (can-action-unit-waku )
+  (render-select-waku)
+  (render-can-atk-waku)
+  (render-enemies)
+  (render-fight-party)
+  (render-selected-unit-status)
+  (render-unit-status-on-mouse)
+  (render-get-item-text)
+  (render-mouse-cursor-waku-and-cell-info )
+  (render-move-waku)
+  
+  (render-selected-chara)
+  (render-all-damage)
+  (render-weapon-change-btn )
+  ;;(render-select-waku)
+  )
+
+;;マップを表示
+(defun render-donjon ()
+  (render-background)
+  (render-field)
+  (render-fight-party)
+  (render-unit-status-on-mouse)
+  (render-select-waku)
+  
+  (render-selected-chara)
+  ;; (render-yuka)
+  ;; (render-block)
+   ;;(render-item)
+   )
+
+
+
+
+
+
+
+
+
+
+
+
 ;;test
 (defun render-test ()
   (select-object *hogememdc*  *anime-monsters-img*)
@@ -596,43 +671,21 @@
      3)))
 
 ;;タイトル画面
-(defun render-title-gamen (hwnd)
-  (let ((hit1) (hit2) (hit3))
-    (render-background)
-    (select-object *hmemdc* *font140*)
-    ;;(set-bk-mode *hmemdc* :transparent)
-    (set-text-color *hmemdc* (encode-rgb 0 155 255))
-    (text-out *hmemdc* "もげてぃかる仮" 50 70)
-    
-    (case (title-gamen-mouse-pos)
-      (1
-       (select-object *hmemdc* (get-stock-object :white-brush))
-       (rectangle *hmemdc* 330 360 475 405)
-       (setf hit1 t))
-      (2
-       (setf hit2 t)
-       (select-object *hmemdc* (get-stock-object :white-brush))
-       (rectangle *hmemdc* 330 410 475 455))
-      (3
-       (setf hit3 t)
-       (select-object *hmemdc* (get-stock-object :white-brush))
-       (rectangle *hmemdc* 330 460 420 505)))
-    (select-object *hmemdc* *font40*)
-    (set-text-color *hmemdc* (encode-rgb 255 255 255))
-    (text-out *hmemdc* (format nil "x:~d y:~d" (x *mouse*) (y *mouse*)) 300 200)
-    (text-out *hmemdc* (format nil "winx:~d winy:~d" *change-screen-w* *change-screen-h*) 300 250)
-    (if hit1
-	(set-text-color *hmemdc* (encode-rgb 0 0 0))
-	(set-text-color *hmemdc* (encode-rgb 255 255 255)))
-    (text-out *hmemdc* "はじめから" 330 360)
-    (if hit2
-	(set-text-color *hmemdc* (encode-rgb 0 0 0))
-	(set-text-color *hmemdc* (encode-rgb 255 255 255)))
-    (text-out *hmemdc* "つづきから" 330 410)
-    (if hit3
-	(set-text-color *hmemdc* (encode-rgb 0 0 0))
-	(set-text-color *hmemdc* (encode-rgb 255 255 255)))
-    (text-out *hmemdc* "おわる" 330 460)))
+(defun render-title-gamen ()
+  (render-background)
+  (select-object *hmemdc* *font140*)
+  ;;(set-bk-mode *hmemdc* :transparent)
+  (set-text-color *hmemdc* (encode-rgb 0 155 255))
+  (text-out *hmemdc* "もげてぃかる仮" 50 70)
+  (create-render-button-no-waku *title-start-x1*  *title-start-x2* *title-start-y1* *title-start-y2*
+				"はじめる" *title-start-x1* *title-start-y1* :font *font40*)
+  (create-render-button-no-waku *title-end-x1*  *title-end-x2* *title-end-y1* *title-end-y2*
+				"おわる" *title-end-x1* *title-end-y1* :font *font40*)
+  (select-object *hmemdc* *font40*)
+  (set-text-color *hmemdc* (encode-rgb 255 255 255))
+  (text-out *hmemdc* (format nil "x:~d y:~d" (x *mouse*) (y *mouse*)) 300 200)
+  (text-out *hmemdc* (format nil "winx:~d winy:~d" *change-screen-w* *change-screen-h*) 300 250))
+   
     ;; (select-object *hogememdc* *waku2-img*)
     ;; (alpha-blend *hmemdc* 0 0 *hogememdc* 0 0 :width-dest 128 :height-dest 128
     ;; 		 :width-source 128 :height-source 128)));;source-constant-alpha 50)))
@@ -643,47 +696,39 @@
   (select-object *hmemdc* *font140*)
   ;;(set-bk-mode *hmemdc* :transparent)
   (set-text-color *hmemdc* (encode-rgb 0 155 255))
-  (text-out *hmemdc* "GAME OVER" 50 70)
-  (select-object *hogememdc* *objs-img*)
-  (cond
-    ((= (cursor *p*) 0)
-     (new-trans-blt 280 360 (* 32 +cursor+) 0 32 32 32 32))
-    ((= (cursor *p*) 1)
-     (new-trans-blt 280 410 (* 32 +cursor+) 0 32 32 32 32))
-    ((= (cursor *p*) 2)
-     (new-trans-blt 280 460 (* 32 +cursor+) 0 32 32 32 32)))
+  (text-out *hmemdc* "全 滅" 280 70)
+  (create-render-button-no-waku *title-start-x1*  *title-start-x2* *title-start-y1* *title-start-y2*
+				"はじめから" *title-start-x1* *title-start-y1* :font *font40*)
+  (create-render-button-no-waku *continue-x1*  *continue-x2* *continue-y1* *continue-y2*
+				"再挑戦" *continue-x1* *continue-y1* :font *font40*)
+  (create-render-button-no-waku *title-end-x1*  *title-end-x2* *title-end-y1* *title-end-y2*
+				"おわる" *title-end-x1* *title-end-y1* :font *font40*)
   (select-object *hmemdc* *font40*)
   (set-text-color *hmemdc* (encode-rgb 255 255 255))
-  (text-out *hmemdc* (format nil "~d階で力尽きた" (stage *donjon*)) 5 200)
-  (text-out *hmemdc* "リトライ" 330 360)
-  (text-out *hmemdc* "最深のセーブから" 330 410)
-  (text-out *hmemdc* "おわる" 330 460))
+  (text-out *hmemdc* (format nil "x:~d y:~d" (x *mouse*) (y *mouse*)) 300 200)
+  (text-out *hmemdc* (format nil "winx:~d winy:~d" *change-screen-w* *change-screen-h*) 300 250))
   
 
 
 
 ;;エンディング画面
 (defun render-ending-gamen ()
-  (let ((time1 (- (endtime *p*) *start-time*)))
+  (let ((time1 (- (endtime *p*) (starttime *p*))))
     (multiple-value-bind (h m s ms) (get-hms time1)
       (render-background)
       (select-object *hmemdc* *font70*)
       ;;(set-bk-mode *hmemdc* :transparent)
       (set-text-color *hmemdc* (encode-rgb 0 155 255))
-      (text-out *hmemdc* (format nil "~a は" (name *p*)) 10 10)
-      (text-out *hmemdc* (format nil "もげぞうの迷宮を制覇した！") 100 100)
+      (text-out *hmemdc* (format nil "冒険者たちは") 250 10)
+      (text-out *hmemdc* (format nil "モゲダンジョンを踏破した") 150 80)
       (select-object *hmemdc* *font70*)
       (set-text-color *hmemdc* (encode-rgb 255 255 255))
-      (text-out *hmemdc* (format nil "クリアタイム") 270 200)
-      (text-out *hmemdc* (format nil  "~2,'0d 時間 ~2,'0d 分 ~2,'0d 秒 ~2,'0d" h m s ms) 100 280)
-      (select-object *hogememdc* *objs-img*)
-      (if (= (cursor *p*) 0)
-	  (new-trans-blt 280 400 (* 32 +cursor+) 0 32 32 32 32)
-	  (new-trans-blt 280 450 (* 32 +cursor+) 0 32 32 32 32))
-      (select-object *hmemdc* *font40*)
-      (set-text-color *hmemdc* (encode-rgb 255 255 255))
-      (text-out *hmemdc* (format nil "もう一度やる") 330 400)
-      (text-out *hmemdc* (format nil "おわる") 330 450))))
+      (text-out *hmemdc* (format nil "クリアタイム") 270 180)
+      (text-out *hmemdc* (format nil  "~2,'0d 時間 ~2,'0d 分 ~2,'0d 秒 ~2,'0d" h m s ms) 100 260)
+      (create-render-button-no-waku *title-start-x1*  *title-start-x2* *title-start-y1* *title-start-y2*
+				"はじめから" *title-start-x1* *title-start-y1* :font *font40*)
+      (create-render-button-no-waku *title-end-x1*  *title-end-x2* *title-end-y1* *title-end-y2*
+				    "おわる" *title-end-x1* *title-end-y1* :font *font40*))))
 
 ;;初期パーティ編成画面のボタンの位置
 (defun party-edit-gamen-mouse-pos ()
@@ -769,10 +814,10 @@
 
 
 ;;ゲーム全体描画
-(defun render-game (hdc hwnd)
+(defun render-game (hdc)
   (case (state *p*)
     (:title ;;タイトル画面
-     (render-title-gamen hwnd))
+     (render-title-gamen))
     (:initpartyedit
      (render-party-edit-gamen))
     (:battle-preparation
@@ -781,15 +826,6 @@
      (render-weapon-change-gamen))
     (:battle
      (render-battle))
-    (:playing ;;ゲーム
-     (render-donjon)
-     ;;(render-enemies)
-     ;;(render-player)
-     ;;(render-arrow)
-     ;;(render-all-damage)
-     ;;(render-p-status)
-     )
-     ;;(render-test)
     (:dead
      (render-gameover-gamen))
     (:ending ;;エンディング画面

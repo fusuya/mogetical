@@ -44,22 +44,56 @@
     (setf left nil right nil down nil up nil z nil x nil c nil enter nil shift nil)))
 
 
+
+
+
 ;;ゲーム初期化
 (defun init-game ()
-  (setf *p* (make-instance 'player :item nil) ;;*test-buki-item*)
+  (setf *p* (make-instance 'player :item nil :state :title :starttime (get-internal-real-time)) ;;*test-buki-item*)
+	*backup-player-data* (make-instance 'player)
 	*mouse* (make-instance 'mouse)
-        *donjon* (make-instance 'donjon :drop-item  (create-drop-item-list)
-				:appear-enemy-rate (copy-tree *appear-enemy-rate-list*)));;(car *stage-list*)) ;;(nth (length *stage-list*) *stage-list*))
+	*bgm* *titlebgm*
+        *donjon* (make-instance 'donjon :drop-item  (create-drop-item-list (list *sword-list* *spear-list* *ax-list* *rod-list* *staff-list* *bow-list* *clothes-list* *shield-list*))
+				:appear-enemy-rate (copy-tree *appear-enemy-rate-list*)
+				:stage 1));;(car *stage-list*)) ;;(nth (length *stage-list*) *stage-list*))
+  (init-weapon-list)
+  (init-bgm)
   (create-stage)
   ;;(set-test-item-list)
+  
   (init-keystate))
+
 
 ;;次のステージデータ生成
 (defun set-next-stage ()
+  (setf (save *p*) nil)
   (incf (stage *donjon*))
-  (adjust-appear-enemy)
-  (adjust-drop-item-rate *donjon*)
-  (create-stage))
+  (if (= (stage *donjon*) 101) ;;100界でｵﾜﾘ
+      (setf (endtime *p*) (get-internal-real-time)
+	    (state *p*) :ending)
+      (progn (adjust-appear-enemy)
+	     (adjust-drop-item-rate *donjon*)
+	     (adjust-enemy-equip-rate)
+	     (create-stage))))
+
+
+
+;つつけるようにプレイヤーデータを保存しておく
+(defun save-player-data (moto saki)
+  (with-slots (party cursor item bgm item-page getitem turn prestate state) moto
+    (setf (party saki) (loop :for p :in party
+			  :collect (shallow-copy-object p))
+	  (item saki) (loop :for i :in item
+			 :collect (shallow-copy-object i))
+	  (item-page saki) 0
+	  (turn saki) :ally
+	  (prestate saki) prestate
+	  (state saki) state)))
+
+(defun save-donjon-data ()
+  )
+
+
 
 ;;効果音ならす
 (defun sound-play (path)
@@ -101,13 +135,7 @@
 
 
 
-;;時間変換
-(defun get-hms (n)
-  (multiple-value-bind (h m1) (floor n 3600000)
-    (multiple-value-bind (m s1) (floor m1 60000)
-      (multiple-value-bind (s ms1) (floor s1 1000)
-	(multiple-value-bind (ms) (floor ms1 10)
-	  (values h m s ms))))))
+
 
 ;;1以上のランダムな数
 (defun randval (n)
@@ -136,90 +164,30 @@
   (setf (state *p*) :ending
 	(endtime *p*) (get-internal-real-time)))
 
-;;プレイヤーとフロアにあるアイテムの当たり判定
-(defun player-hit-item (p)
-  (with-slots (items stage) *donjon*
-    (let ((item (find (pos p) items :key #'pos :test #'equal)))
-      (setf (door p) nil)
-      (when item
-	(cond
-	  ((= (img item) +potion+)
-	   (sound-play *get-potion-wav*)
-	   (incf (potion p))
-	   (setf (items *donjon*)
-		 (remove item (items *donjon*) :test #'equal)))
-	  ((= (img item) +sword+)
-	   (with-slots (buki-lv buki-exp) p
-	     (sound-play *get-item-wav*)
-	     (setf (items *donjon*)
-		   (remove item (items *donjon*) :test #'equal))
-	     (incf  buki-exp (* (level item) 2))
-	     (when (>= buki-exp 100)
-	       (incf buki-lv)
-	       (decf buki-exp 100)))) ;;武器の攻撃力は１づつ上がる))
-	  ((= (img item) +armour+)
-	   (with-slots (armour-lv armour-exp) p
-	     (sound-play *get-item-wav*)
-	     (setf (items *donjon*)
-		   (remove item (items *donjon*) :test #'equal))
-	     (incf  armour-exp (* (level item) 2))
-	     (when (>= armour-exp 100)
-	       (incf armour-lv)
-	       (decf armour-exp 100)))) ;;武器の攻撃力は１づつ上がる))
-	  ((= (img item) +hammer+)
-	   (sound-play *get-item-wav*)
-	   (incf (hammer p))
-	   (setf (items *donjon*)
-		 (remove item (items *donjon*) :test #'equal)))
-	  ((= (img item) +arrow+)
-	   (sound-play *get-item-wav*)
-	   (incf (arrow-num p))
-	   (setf (items *donjon*)
-		 (remove item (items *donjon*) :test #'equal)))
-	  ((= (img item) +orb+)
-	   (incf (orb p))
-	   (sound-play *get-orb*)
-	   (setf (items *donjon*)
-		 (remove item (items *donjon*) :test #'equal)))
-	  ((= (img item) +door+)
-	   (setf (door p) t)
-	   (when (enter *keystate*)
-	     (setf (door p) nil)
-	     (sound-play *door-wav*)
-	     (if (= (orb p) 1)
-		 (if (= stage 1)
-		     (go-ending)
-		     (decf stage))
-		 (incf stage))
-	     (maze *donjon* p))))))))
 
 
-;;武器のステータス取得
-(defun get-item-abi (weapon ablility)
+
+;;bgm 
+(defun set-bgm (&optional (new-alias nil))
   (cond
-    ((null weapon)
-     "なし")
+    ((or (equal *bgm* new-alias)
+	 (find *bgm* *battle-bgm-list* :test #'equal))
+     (let ((st (bgm-status *bgm*)))
+       (when (equal st "stopped")
+	 (bgm-play *bgm*))))
     (t
-     (case ablility
-       (:name     (name     (aref *weapondescs* weapon)))
-       (:rangemin (rangemin (aref *weapondescs* weapon)))
-       (:rangemax (rangemax (aref *weapondescs* weapon)))
-       (:def      (def      (aref *weapondescs* weapon)))
-       (:hit      (hit      (aref *weapondescs* weapon)))
-       (:critical (critical (aref *weapondescs* weapon)))
-       (:damage   (damage   (aref *weapondescs* weapon)))
-       (:blk      (blk      (aref *weapondescs* weapon)))))))
+     (when (eq (state *p*) :battle)
+       (setf new-alias (nth (random (length *battle-bgm-list*)) *battle-bgm-list*)))
+     (bgm-stop *bgm*)
+     (setf *bgm* new-alias)
+     (bgm-play *bgm*))))
 
-;;ジョブデータ取得
-(defun get-job-data (job ability)
-  (case ability
-    (:name     (name     (aref *jobdescs* job)))
-    (:move     (move     (aref *jobdescs* job)))
-    (:movecost (movecost (aref *jobdescs* job)))
-    (:canequip (canequip (aref *jobdescs* job)))
-    (:lvuprate (lvuprate (aref *jobdescs* job)))
-    (:img      (img      (aref *jobdescs* job)))))
 
+
+;;ユニットとユニットの距離
+(defun unit-dist (unit1 unit2)
+  (+ (abs (- (x unit1) (x unit2)))
+     (abs (- (y unit1) (y unit2)))))
 
 ;;ダメージ計算
 (defmethod damage-calc (atker defender)
@@ -228,47 +196,41 @@
       ;;回復
       ((eq (atktype buki) :heal)
        (+ (int atker) (random (damage buki))))
+      ;;ブロック
+      ((< (random 100) (blk (armor defender)))
+       0)
+      ;;地形回避
+      ((< (random 100) (get-cell-data (cell defender) :avoid))
+       0)
       (t
        (let* ((atkhosei (if (eq (categoly buki) :wand) int str))
 	      (defhosei (if (eq (categoly buki) :wand) (res defender) (vit defender)))
-	      (atkdmg (if buki (+ (damage buki) atkhosei) atkhosei))
+	      (tokkou-dmg (if (find (job defender) (tokkou buki)) 1.5 1))
+	      (cri (if (> (critical buki) (random 100)) 1.3 1))
+	      (atkdmg (if buki (+ (* (damage buki) tokkou-dmg cri) atkhosei) atkhosei))
+	      
 	      (def1 (if (armor defender) (+ (def (armor defender)) defhosei)
 			defhosei))
-	      (base-dmg (- (floor atkdmg 2) (floor def1 4)))
+	      (base-dmg (- (floor atkdmg 2) (floor (+ def1 (get-cell-data (cell defender) :def)) 4)))
 	      (rand-dmg (1+ (floor base-dmg 16))))
 	 (if (= (random 2) 0)
 	     (max 1 (+ base-dmg rand-dmg))
 	     (max 1 (- base-dmg rand-dmg))))))))
 
 
-;;レヴェルアップ時ステータス上昇
-(defun status-up (atker)
-  (let ((lvup-rate (get-job-data (job atker) :lvuprate)))
-    (when (>= (getf lvup-rate :hp) (random 100))
-      (incf (maxhp atker)))
-    (when (>= (getf lvup-rate :str) (random 100))
-      (incf (str atker)))
-    (when (>= (getf lvup-rate :vit) (random 100))
-      (incf (vit atker)))
-    (when (>= (getf lvup-rate :int) (random 100))
-      (incf (int atker)))
-    (when (>= (getf lvup-rate :res) (random 100))
-      (incf (res atker)))
-    (when (>= (getf lvup-rate :agi) (random 100))
-      (incf (agi atker)))))
 
 ;;経験値取得
 (defun player-get-exp (atker defender)
   (incf (expe atker) (expe defender))
-  ;;(sound-play *lvup-wav*)
   (loop while (>= (expe atker) (lvup-exp atker))
      do
+       (sound-play *lvup-wav*)
        (status-up atker)
        (incf (level atker))
        (setf (expe atker) (- (expe atker) (lvup-exp atker)))
-       (incf (lvup-exp atker) 10)))
+       (incf (lvup-exp atker) 5)))
 
-;;ダメージ表示
+;;ダメージ表示要obj
 (defun add-damage-font (atker defender)
   (with-slots (x y posx posy obj-type hp atk-spd) defender
     (let* ((dmg-x (+ posx 10))
@@ -321,7 +283,7 @@
 	   (setf dmg nil)))))))
 
 ;;ダメージフォントの位置更新
-(defun update-damage-fonts (atk def)
+(defun update-damage-fonts (def)
   ;;(when (zerop (mod (atk-c atk) 3))
     (update-damage-font def))
 
@@ -346,15 +308,17 @@
     (:down (setf (posy p) (update-atk-img-pos (posy p) i )))
     (:up   (setf (posy p) (- (update-atk-img-pos (- (posy p)) i))))))
 
-
+;;攻撃効果音
 (defun play-atk-sound (unit)
-  (case (categoly (buki unit))
-    (:sword (sound-play *sword-wav*))
-    (:ax (sound-play *ax-wav*) )
-    (:spear (sound-play *spear-wav*))
-    (:bow (sound-play *bow-wav*))
-    (:wand (sound-play *wand-wav*))
-    (:staff (sound-play *heal-wav*))))
+  (sound-play 
+   (case (categoly (buki unit))
+     (:sword   *sword-wav*)
+     (:ax      *ax-wav*)
+     (:spear   *spear-wav*)
+     (:bow     *bow-wav*)
+     (:wand    *wand-wav*)
+     (:knuckle *knuckle-wav*)
+     (:staff   *heal-wav*))))
 
 ;;攻撃アニメ終わるまでループ
 (defun update-atk-anime (atk hwnd &key (def nil))
@@ -367,47 +331,27 @@
        ;;(incf (atk-c atk))
        (update-atk-img atk i)
        (when def
-	 (update-damage-fonts atk def))
+	 (update-damage-fonts def))
        (invalidate-rect hwnd nil nil)
        (update-window hwnd))
   (when def
     (delete-damage-font def)))
 
 
+
+;;自身を回復した時のフォント
 (defun update-heal-font (atk hwnd)
   (set-damage atk atk)
   (loop :for i :from 0 :to 18
-     :do (update-damage-fonts atk atk)
+     :do (update-damage-fonts atk)
        (invalidate-rect hwnd nil nil)
        (update-window hwnd))
   (delete-damage-font atk))
 
 
-;;隣に敵がいるか調べる
-(defun check-neighbour (p e)
-  (let ((dir (mapcar #'- (pos p) (pos e))))
-    (cond
-      ((equal dir '(1 0))
-       :left)
-      ((equal dir '(-1 0))
-       :right)
-      ((equal dir '(0 1))
-       :up)
-      ((equal dir '(0 -1))
-       :down))))
 
-
-
-
-
-
-;;移動可能場所生成
-(defun where-to-go-next (e)
-  (loop :for nextpos :in '((0 1) (0 -1) (1 0) (-1 0) (0 0))
-     :unless (hit-hantei (mapcar #'+ (pos e) nextpos) :walls t :blocks t :enemies t)
-     :collect nextpos))
-
-
+(defun gameover? ()
+  (every #'(lambda (x) (eq (state x) :dead)) (party *p*)))
 
 ;;移動後に攻撃できる敵ゲット
 (defun get-can-atk-enemy-after-move (unit enemies)
@@ -426,7 +370,10 @@
      :for e :in targets
      :do
        (cond
-	 ((>= (rangemax (buki unit)) (unit-dist unit e) (rangemin (buki unit)))
+	 ((or (and (not (eq (state e) :dead))
+		   (>= (rangemax (buki unit)) (unit-dist unit e) (rangemin (buki unit))))
+	      (and (= (unit-dist unit e) 0)
+		   (eq (atktype (buki unit)) :heal)))
 	  (setf (atkedarea e) (list (x unit) (y unit)))
 	  (push e (canatkenemy unit)))
 	 (t
@@ -434,209 +381,60 @@
 	     :for area :in (movearea unit)
 	     :do (let ((x (car area)) (y (cadr area))
 		       (ex (x e)) (ey (y e)))
-		   (when (>= (rangemax (buki unit)) (+ (abs (- ex x)) (abs (- ey y))) (rangemin (buki unit))) ;;1は武器のレンジに切り替える
-		     (setf (atkedarea e) area)
-		     (push e (canatkenemy unit)))))))))
+		   (if (and (not (eq (state e) :dead))
+			    (>= (rangemax (buki unit)) (+ (abs (- ex x)) (abs (- ey y))) (rangemin (buki unit))))
+		       (progn (setf (atkedarea e) area)
+			      (push e (canatkenemy unit))
+			      (return))
+		       (setf (atkedarea e) nil))))))))
 
 ;;ユニットの移動可能範囲取得
 (defun can-move-area (unit x y move movecost i enemies allies)
-  (when (and (>= (1- *map-w*) x 0) (>= (1- *map-h*) y 0))
+  (when (and (>= (1- *yoko-block-num*) x 0) (>= (1- *tate-block-num*) y 0))
     (let* ((cell (aref (field *donjon*) y x))
            (cost (if (= i 0) 0 (aref movecost cell)))
 	   (enemy (find-if #'(lambda (p) (and (= x (x p)) (= y (y p)))) enemies))
 	   (ally (find-if #'(lambda (p) (and (= x (x p)) (= y (y p)))) allies)))
-
       (when (and (>= move cost) (>= cost 0)
-                 (null enemy))
-		 ;; (and (> i 0)
-		 ;;      (null ally)))
-                 ;;    (= team (unit-team unit?))))
+                 (or (null enemy)
+		     (eq (state enemy) :dead))) ;;死んでる敵の上は移動できる
 	(when (and (not (find (list x y) (movearea unit) :test #'equal))
-		   (null ally))
+		   (or (null ally)
+		       (eq (state ally) :dead)))
 	  (push (list x y) (movearea unit)))
         (loop for v in '((0 1) (0 -1) (1 0) (-1 0))
               do
               (can-move-area unit (+ x (car v)) (+ y (cadr v))
                              (- move cost) movecost (1+ i) enemies allies))))))
 
+;;atk可能なユニットをゲット
+(defun get-can-atk-target (unit allies enemies)
+  (cond
+    ((eq (atktype (buki unit)) :atk)
+     (get-can-atk-enemy unit enemies))
+    ((eq (atktype (buki unit)) :heal)
+     (get-can-atk-enemy unit allies))))
+
 ;;ユニットの移動可能範囲取得
 (defun get-move-area (select-unit enemies allies)
-  (let* ((move (get-job-data (job select-unit) :move)) (x (x select-unit))
-	 (y (y select-unit))
+  (let* ((move (get-job-data (job select-unit) :move))
+	 (x (x select-unit)) (y (y select-unit))
 	 (movecost (get-job-data (job select-unit) :movecost)))
     (can-move-area select-unit x y move movecost 0 enemies allies)
-    (cond
-      ((eq (atktype (buki select-unit)) :atk)
-       (get-can-atk-enemy select-unit enemies))
-      ((eq (atktype (buki select-unit)) :heal)
-       (get-can-atk-enemy select-unit allies)))))
-
-
-
-;;アイテムリストからマウス位置のアイテムを帰す
-(defun get-item-mouse-pos ()
-  (with-slots (x y) *mouse*
-    (cond
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item1-y2* y *item1-y1*))
-       (nth (+ 0 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item2-y2* y *item2-y1*))
-       (nth (+ 1 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item3-y2* y *item3-y1*))
-       (nth (+ 2 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item4-y2* y *item4-y1*))
-       (nth (+ 3 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item5-y2* y *item5-y1*))
-       (nth (+ 4 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item6-y2* y *item6-y1*))
-       (nth (+ 5 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item7-y2* y *item7-y1*))
-       (nth (+ 6 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item8-y2* y *item8-y1*))
-       (nth (+ 7 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item9-y2* y *item9-y1*))
-       (nth (+ 8 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item10-y2* y *item10-y1*))
-       (nth (+ 9 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item11-y2* y *item11-y1*))
-       (nth (+ 10 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item12-y2* y *item12-y1*))
-       (nth (+ 11 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item13-y2* y *item13-y1*))
-       (nth (+ 12 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      ((and
-	    (>= *item-x2* x *item-x1*)
-	    (>= *item14-y2* y *item14-y1*))
-       (nth (+ 13 (* (item-page *p*) *item-show-max*)) (item *p*)))
-      )))
+    (get-can-atk-target select-unit allies enemies)))
 
 
 
 
 
-;;宝箱
-(defun chest-drop-item ()
-  (let* ((n (random 12)))
-    (cond
-      ((>= 1 n 0) +arrow+)
-      ((>= 4 n 2)  +potion+)
-      ((>= 7 n 5) +armour+)
-      ((>= 10  n 8) +sword+)
-      ((>=  n 11) +hammer+))))
-
-;;スライムのドロップ品
-(defun slime-drop-item ()
-  (when (> 1 (random 10))
-    +potion+))
-;;ブリガンドのドロップ品
-(defun brigand-drop-item ()
-  (when (> (random 10) 4)
-    +arrow+))
-
-(defun orc-drop-item ()
-  (let ((n (random 7)))
-    (case n
-      (0 +armour+)
-      (1 +sword+))))
-
-(defun hydra-drop-item ()
-  (let ((n (random 7)))
-    (case n
-      (0 +armour+)
-      (1 +potion+))))
-
-(defun dragon-drop-item ()
-  (let ((n (random 7)))
-    (case n
-      (0 +armour+)
-      (1 +sword+)
-      (2 +potion+)
-      )))
-
-;;通常のドロップアイテム
-(defun normal-drop-item ()
-  (let* ((n (random 100)))
-    (cond
-      ((>= 9 n 0) +arrow+)
-      ((>= 20 n 10)  +potion+)
-      ((>= 36 n 26) +hammer+)
-      ((>= 51  n 46) +sword+)
-      ((>= 57  n 52) +armour+)
-      (t nil))))
-
-;;アイテム落ちそうな場所
-(defun can-drop-pos (pos)
-  (loop :for n :in *droppos*
-     :for new = (mapcar #'+ pos n)
-     :unless (hit-hantei new :blocks t :walls t :player t :items t)
-     :collect new))
-
-;;アイテムの靴を落とす
-(defun enemy-drop-item (e)
-  (let* ((droppos (can-drop-pos (pos e))))
-    (when droppos
-      (loop
-	 :repeat (max 1 (random (length droppos)))
-	 :for pos :in droppos
-	 :do
-	   (let ((item (case (obj-type e)
-			 (:slime (slime-drop-item))
-			 (:brigand (brigand-drop-item))
-			 (:orc (orc-drop-item ))
-			 (:chest (chest-drop-item))
-			 (:dragon (dragon-drop-item))
-			 (:hydra (hydra-drop-item))
-			 (otherwise (normal-drop-item)))))
-	     (when item
-	       (let ((drop-item (make-instance 'obj :img item :level (level e)
-					       :pos pos
-					       :x (x e) :y (y e) :w 32 :h 32 :w/2 16 :h/2 16
-					       :moto-w 32 :moto-h 32 :obj-type item)))
-		 (push drop-item (items *donjon*))))
-	     (when (eq (obj-type e) :chest)
-	       (return)))))))
 
 
-;;重み付け抽選-----------------------------------------------
-(defun rnd-pick (i rnd lst len)
-  (if (= i len)
-      (1- i)
-      (if (< rnd (nth i lst))
-	  i
-	  (rnd-pick (1+ i) (- rnd (nth i lst)) lst len))))
-;;lst = *copy-buki*
-(defun weightpick (lst)
-  (let* ((lst1 (mapcar #'cdr lst))
-	 (total-weight (apply #'+ lst1))
-	 (len (length lst1))
-	 (rnd (random total-weight)))
-    (car (nth (rnd-pick 0 rnd lst1 len) lst))))
-;;------------------------------------------------------------
+
+
+
+
+
+
 
 
 
@@ -665,72 +463,6 @@
 ;; *start-time* (get-internal-real-time)))
 
 
-(defun update-move-cursor (num)
-  (with-slots (up down enter) *keystate*
-    (cond
-      (up
-       (decf (cursor *p*))
-       (when (> 0 (cursor *p*))
-	 (setf (cursor *p*) (1- num))))
-      (down
-       (incf (cursor *p*))
-       (when (>= (cursor *p*) num)
-	 (setf (cursor *p*) 0))))))
-
-;;タイトル画面での操作 330 360
-(defun update-title-and-ending-gamen (hwnd)
-  (with-slots (left) *mouse*
-    (when left
-      (case (title-gamen-mouse-pos)
-	(1 (sound-play *select-wav*)
-	   (start-game))
-	(2)
-	(3 (sound-play *select-wav*)
-	   (send-message hwnd (const +wm-close+) nil nil))))))
-
-
-;;ジョブ別初期武器
-(defun job-init-weapon (job)
-  (cond
-    ((= job +job_warrior+)  (item-make (aref *weapondescs* +w_wood_sword+)))
-    ((= job +job_sorcerer+) (item-make (aref *weapondescs* +w_rod+)))
-    ((= job +job_priest+)   (item-make (aref *weapondescs* +w_staff+)))
-    ((= job +job_archer+)   (item-make (aref *weapondescs* +w_bow+)))
-    ((= job +job_s_knight+) (item-make (aref *weapondescs* +w_spear+)))
-    ((= job +job_thief+)    (item-make (aref *weapondescs* +w_knife+)))
-    ((= job +job_p_knight+) (item-make (aref *weapondescs* +w_spear+)))
-    ((= job +job_brigand+)  (item-make (aref *weapondescs* +w_bow+)))
-    ((= job +job_dragon+)   (item-make (aref *weapondescs* +w_dragon_crow+)))
-    ((= job +job_hydra+)    (item-make (aref *weapondescs* +w_hydra_fang+)))
-    ((= job +job_orc+)      (item-make (aref *weapondescs* +w_ax+)))
-    ((= job +job_slime+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ((= job +job_yote1+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ((= job +job_goron+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ))
-;;キャラクターを追加
-(defun push-chara-init-party (num)
-  (when (> 5 (length (party *p*)))
-    (let* ((weapon (job-init-weapon num))
-	   (armor (item-make (aref *weapondescs* +a_clothes+)))
-	   (chara (make-instance 'unit :job num
-				 :buki weapon :vit 3 :str 3 :agi 1 :res 3 :int 3
-				 :armor armor
-				 :team :ally
-				 :name (nth (random (length *name-list*)) *name-list*)
-				 :img-h num)))
-      (setf (equiped weapon) (name chara)
-	    (equiped armor)  (name chara)
-	    (party *p*) (append (party *p*) (list chara)))
-      (push weapon (item *p*))
-      (push armor (item *p*)))))
-
-;;キャラクターをパーティから削除
-(defun delete-chara-init-party (mouse)
-  (let* ((x (- mouse 7))
-	 (d (nth x (party *p*))))
-    (setf (party *p*)
-	  (remove d (party *p*) :test #'equal))))
-
 ;;ダンジョンのキャラ初期位置セット
 (defun set-chara-init-position ()
   (with-slots (player-init-pos field) *donjon*
@@ -749,11 +481,96 @@
 		      (when (= num (length (party *p*)))
 			(return-from set-chara-init-position))))
 		      ;;(setf (aref field (y chara) (x chara)) :p)
-		  ))))
+	   ))))
+
+
+;;全滅したとこから再戦 backupから*p*にコピーする
+;;ステージデータは新しく作る
+(defun continue-game ()
+  (save-player-data *backup-player-data* *p*)
+  (create-stage)
+  (set-chara-init-position))
+
+
+(defun update-move-cursor (num)
+  (with-slots (up down enter) *keystate*
+    (cond
+      (up
+       (decf (cursor *p*))
+       (when (> 0 (cursor *p*))
+	 (setf (cursor *p*) (1- num))))
+      (down
+       (incf (cursor *p*))
+       (when (>= (cursor *p*) num)
+	 (setf (cursor *p*) 0))))))
+
+
+
+;;タイトル画面とクリア画面での操作
+(defun update-title-and-ending-gamen (hwnd)
+  (with-slots (left x y) *mouse*
+    (set-bgm *titlebgm*)
+    (when left
+      (cond
+	((and (>= *title-start-x2* x *title-start-x1*)
+	      (>= *title-start-y2* y *title-start-y1*))
+	 (sound-play *select-wav*)
+	 (start-game))
+	((and (>= *title-end-x2* x *title-end-x1*)
+	      (>= *title-end-y2* y *title-end-y1*))
+	 (sound-play *select-wav*)
+	 (send-message hwnd (const +wm-close+) nil nil))))))
+
+;;コンテニュー画面
+(defun update-gameover-gamen (hwnd)
+  (with-slots (left x y) *mouse*
+    (when left
+      (cond
+	((and (>= *title-start-x2* x *title-start-x1*)
+	      (>= *title-start-y2* y *title-start-y1*))
+	 (sound-play *select-wav*)
+	 (start-game))
+	((and (>= *continue-x2* x *continue-x1*)
+	      (>= *continue-y2* y *continue-y1*))
+	 (sound-play *select-wav*)
+	 (continue-game))
+	((and (>= *title-end-x2* x *title-end-x1*)
+	      (>= *title-end-y2* y *title-end-y1*))
+	 (sound-play *select-wav*)
+	 (send-message hwnd (const +wm-close+) nil nil))))))
+
+
+
+;;キャラクターを追加
+(defun push-chara-init-party (num)
+  (when (> 5 (length (party *p*)))
+    (let* ((weapon (job-init-weapon num))
+	   (armor (item-make (aref *weapondescs* +a_clothes+)))
+	   (chara (make-instance 'unit :job num :hp 30 :maxhp 30
+				 :buki weapon :vit 3 :str 6 :agi 2 :res 3 :int 3
+				 :armor armor :state :action
+				 :team :ally :w 32 :h 32 :moto-w 32 :moto-h 32
+				 :name (nth (random (length *name-list*)) *name-list*)
+				 :img-h num)))
+      (setf (equiped weapon) (name chara)
+	    (equiped armor)  (name chara)
+	    (party *p*) (append (party *p*) (list chara)))
+      (push weapon (item *p*))
+      (push armor (item *p*)))))
+
+;;キャラクターをパーティから削除
+(defun delete-chara-init-party (mouse)
+  (let* ((x (- mouse 7))
+	 (d (nth x (party *p*))))
+    (setf (party *p*)
+	  (remove d (party *p*) :test #'equal))))
+
+
 
 ;;初期パーティ編成画面
 (defun update-init-party-edit-gamen ()
   (with-slots (left right) *mouse*
+    (set-bgm *editbgm*)
     (when (or left right)
       (let ((mouse (party-edit-gamen-mouse-pos)))
 	(cond
@@ -770,14 +587,21 @@
 
 ;;出撃準備画面 マウスアクション
 (defun update-battle-preparation ()
+  (set-bgm *prebattle*)
+  (when (null (save *p*)) ;;プレイヤーデータセーブ
+    (setf (save *p*) t)
+    (save-player-data *p* *backup-player-data*))
   (with-slots (left right selected x y) *mouse*
     (cond
-      ((and left (null selected)
-	    (>= *battle-btn-x2* x *battle-btn-x1* ) (>= *battle-btn-y2* y *battle-btn-y1* ))
+      ;;出撃ボタン
+      ((and left ;;(null selected)
+	    (>= *battle-btn-x2* x *battle-btn-x1*)
+	    (>= *battle-btn-y2* y *battle-btn-y1*))
        (sound-play *select-wav*) 
        (setf (prestate *P*) :battle-preparation
 	     (state *p*) :battle
 	     selected nil))
+      ;;装備変更ボタン
       ((and left selected
 	    (>= *w-change-btn-y2* y *w-change-btn-y1* )
 	    (>= *w-change-btn-x2* x *w-change-btn-x1* ))
@@ -839,10 +663,16 @@
 	    (= diffx 0))
        (setf (dir selected) :down)))))
 
+;;相手ユニットがいて移動できないcellリストを返す
+(defun get-block-cell (enemies)
+  (mapcar #'(lambda (u) (list (x u) (y u)))
+              (remove-if #'(lambda (u) (eq (state u) :dead))
+			 enemies)))
+
 
 ;;goalまでの道順ゲット
 (defun get-move-path (start goal movecost enemies)
-  (let* ((block-cell (get-enemy-cell enemies))
+  (let* ((block-cell (get-block-cell enemies))
 	 (cost) (paths))
     (setf (values cost paths)
 	  (astar start goal (field *donjon*) movecost block-cell))
@@ -881,17 +711,20 @@
      :do (when (and (>= (+ (posx p) *obj-w*) x (posx p))
 		    (>= (+ (posy p) *obj-h*) y (posy p))
 		    (eq (state p) :action))
+	   (sound-play *select-wav*)
 	   (setf (selected *mouse*) p)
-	   (get-move-area (selected *mouse*) (enemies *donjon*) (party *p*)))))
+	   (get-move-area (selected *mouse*) (enemies *donjon*) (party *p*))
+	   (return))))
 
 ;;敵を選択したか
 (defun select-enemy? (x y)
   (loop :for p :in (enemies *donjon*)
-     :do (when (and (>= (+ (posx p) *obj-w*) x (posx p))
-		    (>= (+ (posy p) *obj-h*) y (posy p))
-		    (eq (state p) :action))
-	   (setf (selected *mouse*) p)
-	   (get-move-area (selected *mouse*) (party *p*) (enemies *donjon*)))))
+     :when (and (>= (+ (posx p) *obj-w*) x (posx p))
+		(>= (+ (posy p) *obj-h*) y (posy p))
+		(eq (state p) :action))
+     :do (setf (selected *mouse*) p)
+       (get-move-area (selected *mouse*) (party *p*) (enemies *donjon*))
+       (return)))
 
 ;;階段に止まったか
 (defun stop-kaidan (x y)
@@ -919,12 +752,16 @@
 	     (setf (chest *donjon*) (remove item (chest *donjon*) :test #'equal))
 	     (return)))))
 
-;;ユニットデータ初期化
-(defun init-player-unit-data ()
+;;次のステージ行く前の処理 
+(defun reset-unit-data ()
   (loop :for p :in (party *p*)
-       :do (setf (canatkenemy p) nil
-		 (movearea p) nil
-		 (state p) :action))
+     :do (setf (canatkenemy p) nil
+	       (movearea p) nil
+	       (atkedarea p) nil
+	       (state p) :action)
+     ;;死んだユニット復活
+       (when (eq (state p) :dead)
+	 (setf (hp p) 1)))
   (setf (selected *mouse*) nil
 	(state *p*) :battle-preparation))
 
@@ -937,42 +774,106 @@
 	    buki (item-make (aref *weapondescs* +w_knuckle+))))))
 
 
+;;選択キャラ解除
+(defun clear-selected-unit (selected)
+  (when (eq (state selected) :moved)
+    (setf (state selected) :end))
+  (setf (canatkenemy selected) nil
+	(movearea selected) nil))
+
+;;移動して攻撃 e:対象
+(defun move-and-atk (x1 y1 e hwnd)
+  (with-slots (selected) *mouse*
+    (cond
+      ((equal e selected) ;;自分自身を回復
+       (sound-play *heal-wav*) 
+       (update-heal-font selected hwnd)
+       (delete-use-item selected)
+       (setf (state selected) :end
+	     (canatkenemy selected) nil
+	     (movearea selected) nil
+	     selected nil
+	     (atkedarea e) nil))
+      (e
+       (when (movearea selected) ;;移動
+	 (move-anime selected (atkedarea e) (enemies *donjon*) hwnd)
+	 (setf (x selected) (car (atkedarea e))
+	       (y selected) (cadr (atkedarea e))
+	       (cell selected) (aref (field *donjon*) y1 x1))
+	 (chest-check selected))
+       (set-atk-unit-dir selected e)
+       (update-atk-anime selected hwnd :def e)
+       (delete-use-item selected)
+       (setf (state selected) :end
+	     (canatkenemy selected) nil
+	     (movearea selected) nil
+	     selected nil
+	     (atkedarea e) nil)))))
+
+
+;;ユニットの状態を行動可にする
+(defun init-action (units)
+  (loop :for u :in units
+     :unless (eq (state u) :dead)
+     :do (setf (state u) :action)))
+
+
+
+;;砦回復
+(defun turn-end-heal (units)
+  (loop :for u :in units
+     :when (eq (cell u) +fort+)
+     :do (incf (hp u) (floor (* (/ (maxhp u) 100) (get-cell-data (cell u) :heal))))
+       (when (> (hp u) (maxhp u))
+	 (setf (hp u) (maxhp u)))))
+
 ;;バトル中のマウスアクション
 (defun update-battle-ally-mouse-act (hwnd)
   (with-slots (left right selected x y) *mouse*
     (cond
       ;;装備変更ボタン
-      ((and left selected
+      ((and left selected (eq (team selected) :ally)
 	    (>= *w-change-btn-y2* y *w-change-btn-y1* )
 	    (>= *w-change-btn-x2* x *w-change-btn-x1* ))
        (setf (prestate *p*) :battle
 	     (state *p*) :weaponchange))
       ;;ターン終了ボタン
-      ((and left (null selected)
-	    (>= 660 x 495) (>= 490 y 450))
+      ((and left ;;(or (null selected) (eq (team selected) :enemy))
+	    (>= *turn-end-x2* x *turn-end-x1*)
+	    (>= *turn-end-y2* y *turn-end-y1*))
+       (turn-end-heal (party *p*))
        (setf (turn *p*) :enemy)
        (init-action (party *p*)))
-      ((and right
+      ((and right ;;選択してるキャラ解除
 	    selected)
-       (when (eq (state selected) :moved)
-	 (setf (state selected) :end))
-       (setf (canatkenemy selected) nil
-	     (movearea selected) nil
-	      selected nil))
-      ((and left ;;選択中のキャラがいない時
+       (clear-selected-unit selected)
+       (setf selected nil))
+      ((and left ;;選択中のキャラがいない時ユニットをsekectedにセット
 	    (null selected))
        (select-ally? x y)
        (select-enemy? x y))
-      ((and selected ;;選択中のキャラがいるとき
+      ((and left ;;敵を選択中に他のとこをクリック
+	    selected
+	    (eq (team selected) :enemy))
+       (select-ally? x y)
+       (select-enemy? x y))
+      ((and selected ;;選択中のプレイヤーキャラがいるとき
 	    (eq (team selected) :ally)
 	    left)
        (let* ((x1 (floor x *obj-w*))
 	      (y1 (floor y *obj-h*))
 	      (xy (list x1 y1))
-	      (p1 (find-if #'(lambda (p) (and (= x1 (x p)) (= y1 (y p)))) (party *p*))))
+	      (p1 (find-if #'(lambda (p) (and (= x1 (x p)) (= y1 (y p)))) (party *p*)))
+	      (e  (find-if #'(lambda (p) (and (= x1 (x p)) (= y1 (y p)))) (enemies *donjon*))))
 	 (cond
+	   ((and p1 (eq (state p1) :action) (eq (atktype (buki selected)) :atk))
+	    (clear-selected-unit selected)
+	    (sound-play *select-wav*)
+	    (setf selected p1)
+	    (get-move-area p1 (enemies *donjon*) (party *p*)))
 	   ;;移動だけ
-	   ((and (null p1)
+	   ((and (or (null p1)
+		     (eq (state p1) :dead))
 		 (find xy (movearea selected) :test #'equal))
 	    (move-anime selected xy (enemies *donjon*) hwnd)
 	    (setf (x selected) x1
@@ -981,72 +882,49 @@
 		  (canatkenemy selected) nil
 		  (movearea selected) nil)
 	    (if (stop-kaidan x1 y1) ;;階段にとまったら次のステージへ
-		(progn (init-player-unit-data)
+		(progn (reset-unit-data)
 		       (set-next-stage)
 		       (set-chara-init-position))
 		(progn
 		  (chest-check selected)
-		  (get-can-atk-enemy-after-move selected (enemies *donjon*))
+		  (get-can-atk-target selected (party *p*) (enemies *donjon*))
 		  (if (null (canatkenemy selected))
 		      (setf (state selected) :end
 			    selected nil)
 		      (setf (state selected) :moved)))))
 	   ;;移動して攻撃
-	   ((canatkenemy selected)
-	    (let ((e (find-if #'(lambda (p) (and (= x1 (x p)) (= y1 (y p)))) (canatkenemy selected))))
-	      (cond
-		((equal e selected) ;;自分自身を回復
-		 (sound-play *heal-wav*) 
-		 (update-heal-font selected hwnd)
-		 (delete-use-item selected)
-		 (setf (state selected) :end
-		       (canatkenemy selected) nil
-		       (movearea selected) nil
-		       selected nil
-		       (atkedarea e) nil))
-		(e
-		 (when (movearea selected)
-		   (move-anime selected (atkedarea e) (enemies *donjon*) hwnd)
-		   (setf (x selected) (car (atkedarea e))
-			 (y selected) (cadr (atkedarea e))))
-		 (set-atk-unit-dir selected e)
-		 (update-atk-anime selected hwnd :def e)
-		 (delete-use-item selected)
-		 (setf (state selected) :end
-		       (canatkenemy selected) nil
-		       (movearea selected) nil
-		       selected nil
-		       (atkedarea e) nil)))))))))))
+	   ((find e (canatkenemy selected) :test #'equal)
+	    (move-and-atk x1 y1 e hwnd))
+	   ((find p1 (canatkenemy selected) :test #'equal)
+	    (move-and-atk x1 y1 p1 hwnd))
+	   (e
+	    (clear-selected-unit selected)
+	    (sound-play *select-wav*)
+	    (setf selected e)
+	    (get-move-area e (party *p*) (enemies *donjon*)))))))))
 
-;;ユニットの状態を行動可にする
-(defun init-action (units)
-  (loop :for u :in units
-       :do (setf (state u) :action)))
+
+
 
 ;;バトル中 全員行動済みなら敵のターンへ
 (defun update-battle-ally (hwnd)
-  (if (every #'(lambda (p) (eq (state p) :end)) (party *p*))
+  (if (every #'(lambda (p) (or (eq (state p) :end)
+			       (eq (state p) :dead))) (party *p*))
 
       (when (null (getitem *p*))
-	(setf (turn *p*) :enemy)
-	(init-action (enemies *donjon*)))
+	(turn-end-heal (party *p*))
+	(setf (turn *p*) :enemy))
+	;;(init-action (enemies *donjon*)))
       (update-battle-ally-mouse-act hwnd)))
 
 
-;;ユニットとユニットの距離
-(defun unit-dist (unit1 unit2)
-  (+ (abs (- (x unit1) (x unit2)))
-     (abs (- (y unit1) (y unit2)))))
 
-;;相手ユニットがいて移動できないcellリストを返す
-(defun get-block-cell (enemies)
-  (mapcar #'(lambda (u) (list (x u) (y u)))
-              (remove-if #'(lambda (u) (not (eq (state u) :dead)))
-			 enemies)))
+
+
 
 
 ;;unitに一番近いキャラ
-(defun near-chara (unit r-min cells targets func)
+(defun near-chara (unit cells targets func pred)
   (let ((movecost (get-job-data (job unit) :movecost))
 	(start (list (x unit) (y unit)))) ;;自分の位置
     (first
@@ -1054,83 +932,101 @@
 			(let* ((goal (list (x u) (y u)))
 			       (block-cell (remove goal (get-block-cell targets)
 						   :test #'equal)))
-			  (or (eq (state u) :dead)
-			      (equal "hoge" (astar start goal cells movecost block-cell))
-			      (> r-min (unit-dist unit u))))) ;;最小射程以下の敵消す
+			  (or (eq (state u) :dead) ;;deadウニっと除外
+			      ;;多取り付けないウニっと除外
+			      (equal "hoge" (astar start goal cells movecost block-cell)))))
+			      
+			      ;;(> r-min (unit-dist unit u))))) ;;最小射程以下の敵消す
 		      targets)
-	   #'<
+	   pred
 	   :key func))))
 
 ;;敵の攻撃
 (defun enemy-attack (unit target hwnd)
   (set-atk-unit-dir unit target)
-  (update-atk-anime unit hwnd :def target)
-  (setf (state unit) :end))
+  (update-atk-anime unit hwnd :def target))
 
 
-;;目標に一番近くなる移動可能な場所までの道を返す
-(defun get-goal-to-near-target (unit goal cells movecost block-cell)
-  (first (sort (movearea unit)
-	       #'<
-	       :key #'(lambda (x) (astar goal x cells movecost block-cell)))))
+;;目標に一番近くなる移動可能な場所までの道を返す 最大射程になるように
+(defun get-goal-to-near-target (unit target r-min r-max cells movecost block-cell)
+  (when (movearea unit)
+    (let* ((goal (list (x target) (y target)))
+	   (area (sort (remove-if #'(lambda (x) (equal "hoge" (astar goal x cells movecost block-cell)))
+				  (movearea unit))
+		       #'<
+		       :key #'(lambda (x) (astar goal x cells movecost block-cell)))))
+      (or (find r-max area :key #'(lambda (x) (manhatan goal x)))
+	  (find r-min area :key #'(lambda (x) (manhatan goal x)))
+	  (first area)))))
+    
 
 ;;敵の移動
 (defun enemy-move (unit target r-min r-max enemies cells hwnd)
   (let ((shin-goal nil)
-	(goal (list (x target) (y target)))
+	;;(goal (list (x target) (y target)))
 	(block-cell (get-block-cell enemies)))
     (get-move-area unit (party *p*) (enemies *donjon*))
     (setf shin-goal
-	  (get-goal-to-near-target unit goal cells (get-job-data (job unit) :movecost) block-cell))
-    (move-anime unit shin-goal (party *p*) hwnd)
+	  (get-goal-to-near-target unit target r-min r-max cells (get-job-data (job unit) :movecost) block-cell))
+    (if shin-goal
+	(move-anime unit shin-goal (party *p*) hwnd)
+	(setf shin-goal (list (x unit) (y unit)))) ;;移動先がなかったら元に位置
     (setf (movearea unit) nil
 	  (canatkenemy  unit) nil
 	  (x unit) (car shin-goal)
 	  (y unit) (cadr shin-goal)
-	  (cell unit) (aref (field *donjon*) (y unit) (x unit))
-	  (state unit) :end)))
+	  (cell unit) (aref (field *donjon*) (y unit) (x unit)))))
 
 ;;攻撃or回復する相手を取得
 (defun get-target (atker)
   (with-slots (buki) atker
     (cond
       ((eq (atktype buki) :heal)
-       (near-chara atker (rangemin buki) (field *donjon*) (enemies *donjon*) #'(lambda (x)
-									     (hp x))))
+       (near-chara atker (field *donjon*) (enemies *donjon*) #'(lambda (x)
+								 (- (maxhp x) (hp x))) #'>))
       (t
-       (near-chara atker (rangemin buki) (field *donjon*) (party *p*) #'(lambda (x)
-								      (unit-dist atker x)))))))
+       (near-chara atker (field *donjon*) (party *p*) #'(lambda (x)
+							  (unit-dist atker x)) #'<)))))
 
 
 ;;敵の行動 攻撃範囲に相手ユニットがいたら攻撃する
 (defun enemy-act (hwnd)
   (loop :for u :in (enemies *donjon*)
-     :when (and (not (eq (state u) :dead))
-		(eq (state u) :action))
+     :when (eq (state u) :action)
      :do
        (let* ((r-min (rangemin (buki u)))
 	      (r-max (rangemax (buki u)))
 	      (target (get-target u))
 	      (dist (unit-dist u target)))
-	 (if (>= r-max dist r-min) ;;攻撃範囲に相手がいる
+	 (if (or (>= r-max dist r-min) ;;攻撃範囲に相手がいる
+		 (and (eq (atktype (buki u)) :heal) ;;ヒーラー
+		      (>= r-max dist 0)))
 	     (enemy-attack u target hwnd)
 	     (progn ;;移動後に攻撃範囲に相手がいたら攻撃
-	       ;;(format t "name:~a x:~d y:~d~%" (name u) (x u) (y u))
 	       (enemy-move u target r-min r-max (party *p*) (field *donjon*) hwnd)
-	      ;; (format t "name:~a x:~d y:~d~%" (name u) (x u) (y u))
-	       (setf target (get-target u))
-	       (when (>= r-max (unit-dist u target) r-min)
-		 (enemy-attack u target hwnd)))))))
+	       (setf target (get-target u)) ;;移動後ターゲット再設定
+	       (when (or (>= r-max (unit-dist u target) r-min)
+			 (and (eq (atktype (buki u)) :heal) ;;ヒーラー
+			      (>= r-max dist 0)))
+		 (enemy-attack u target hwnd))))
+	 (setf (movearea u) nil
+	       (canatkenemy u) nil
+	       (atkedarea u) nil
+	       (state u) :end)
+	 (when (gameover?)
+	   (setf (state *p*) :dead)
+	   (return)))))
 
 
 ;;敵の行動
 (defun update-battle-enemy (hwnd)
-  (if (find :action (enemies *donjon*) :key #'state)
-      (enemy-act hwnd)
-      (progn (setf (turn *p*) :ally)
-	     (init-action (enemies *donjon*))
-	     (init-action (party *p*)))))
-
+  ;;(if (find :action (enemies *donjon*) :key #'state)
+  (enemy-act hwnd)
+  (turn-end-heal (enemies *donjon*))
+  (setf (turn *p*) :ally)
+  (init-action (enemies *donjon*))
+  (init-action (party *p*)))
+  
 
 ;;ゲットしたアイテムのテキスト動かす
 (defun update-get-item-text ()
@@ -1143,16 +1039,13 @@
 
 ;;バトル更新
 (defun update-battle (hwnd)
+  (set-bgm)
   (if (eq (turn *p*) :ally)
       (update-battle-ally hwnd)
       (update-battle-enemy hwnd))
   (update-get-item-text)
   (delete-enemies ))
 
-;;ゲームオーバー判定
-(defun game-over? ()
-  (when (dead *p*)
-    (setf (state *p*) :dead)))
 
 ;;選択したアイテムを装備
 (defun equip-item (item)
@@ -1178,6 +1071,9 @@
       (when select-item
 	(setf (new select-item) nil))
       (cond
+	;;捨てる
+	((and right select-item (null (equiped select-item)))
+	 (setf (item *p*) (remove select-item (item *p*) :test #'equal)))
 	(right
 	 (setf (canatkenemy selected) nil
 	       (movearea selected) nil
@@ -1223,16 +1119,8 @@
      (update-weapon-change))
     (:battle
      (update-battle hwnd))
-    (:playing
-     (with-slots (left right down up z x c shift enter) *keystate*
-       (when (or left right down up z x c shift enter)
-      	 ;;(update-player *p* hwnd)
-      	 ;;(update-enemies hwnd)
-      	 ;;(delete-enemies)
-      	 ;;(game-over?)
-         )))
     (:dead
-     (update-title-and-ending-gamen hwnd))
+     (update-gameover-gamen hwnd))
     (:ending
      (update-title-and-ending-gamen hwnd)))
   (init-mouse-button)
@@ -1289,7 +1177,7 @@
      (set-bk-mode *hmemdc* :transparent))
     ((const +wm-paint+)
      (with-paint (hwnd hdc)
-       (render-game hdc hwnd)))
+       (render-game hdc)))
     ((const +wm-size+)
      (change-screen-size lparam))
     ((const +wm-close+)
@@ -1319,6 +1207,8 @@
      (delete-brush)
      (delete-images)
      (delete-font)
+     (bgm-stop (bgm *p*))
+     (close-bgms)
      (post-quit-message)))
   (default-window-proc hwnd msg wparam lparam))
 
