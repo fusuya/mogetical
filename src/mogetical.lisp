@@ -739,7 +739,9 @@
 		    (= (y item) (y unit)))
 	   (sound-play *chest-wav*) 
 	   ;;プレイヤーのアイテムリストに追加
-	   (let* ((item-data (aref *weapondescs* (weightpick (drop-item *donjon*))))
+	   (let* ((item-data (if (> (random 5) 3)
+				 (aref *weapondescs* +w_potion+)
+				 (aref *weapondescs* (weightpick (drop-item *donjon*)))))
 		  (new-item (item-make item-data)))
 	     (setf (new new-item) t
 		   (getitem *p*) (make-instance 'itemtext :name (name new-item)
@@ -756,13 +758,14 @@
 ;;次のステージ行く前の処理 
 (defun reset-unit-data ()
   (loop :for p :in (party *p*)
-     :do (setf (canatkenemy p) nil
-	       (movearea p) nil
-	       (atkedarea p) nil
-	       (state p) :action)
+     :do (when (eq (state p) :dead)
+	   (setf (hp p) 1))
+       (setf (canatkenemy p) nil
+	     (movearea p) nil
+	     (atkedarea p) nil
+	     (state p) :action))
      ;;死んだユニット復活
-       (when (eq (state p) :dead)
-	 (setf (hp p) 1)))
+       
   (setf (selected *mouse*) nil
 	(state *p*) :battle-preparation))
 
@@ -783,7 +786,7 @@
 	(movearea selected) nil))
 
 ;;移動して攻撃 e:対象
-(defun move-and-atk (x1 y1 e hwnd)
+(defun move-and-atk (e hwnd)
   (with-slots (selected) *mouse*
     (cond
       ((equal e selected) ;;自分自身を回復
@@ -800,7 +803,7 @@
 	 (move-anime selected (atkedarea e) (enemies *donjon*) hwnd)
 	 (setf (x selected) (car (atkedarea e))
 	       (y selected) (cadr (atkedarea e))
-	       (cell selected) (aref (field *donjon*) y1 x1))
+	       (cell selected) (aref (field *donjon*) (y selected) (x selected)))
 	 (chest-check selected))
        (set-atk-unit-dir selected e)
        (update-atk-anime selected hwnd :def e)
@@ -842,6 +845,9 @@
       ((and left ;;(or (null selected) (eq (team selected) :enemy))
 	    (>= *turn-end-x2* x *turn-end-x1*)
 	    (>= *turn-end-y2* y *turn-end-y1*))
+       (when selected
+	 (clear-selected-unit selected)
+	 (setf selected nil))
        (turn-end-heal (party *p*))
        (setf (turn *p*) :enemy)
        (init-action (party *p*)))
@@ -895,9 +901,9 @@
 		      (setf (state selected) :moved)))))
 	   ;;移動して攻撃
 	   ((find e (canatkenemy selected) :test #'equal)
-	    (move-and-atk x1 y1 e hwnd))
+	    (move-and-atk e hwnd))
 	   ((find p1 (canatkenemy selected) :test #'equal)
-	    (move-and-atk x1 y1 p1 hwnd))
+	    (move-and-atk p1 hwnd))
 	   (e
 	    (clear-selected-unit selected)
 	    (sound-play *select-wav*)
