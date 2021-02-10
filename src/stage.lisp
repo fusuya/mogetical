@@ -264,6 +264,29 @@
 	:player-init-pos '(:xmin 11 :xmax 13  :ymin 11 :ymax 13)
 	:enemy-init-pos  '(:xmin 10 :xmax 13  :ymin  1 :ymax 4)))
 
+(defparameter *stage13*
+  (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
+		 (1 0 0 0 0 0 0 0 0 0 3 0 0 0 1)
+		 (1 0 0 7 7 0 0 0 0 0 3 0 0 0 1)
+		 (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 3 0 0 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 0 3 0 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 4 0 0 0 0 0 0 0 1)
+		 (1 3 0 0 0 0 4 3 0 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 0 0 0 0 0 0 0 0 1)
+		 (1 0 5 4 0 0 0 0 0 0 0 5 4 0 1)
+		 (1 0 5 3 0 0 3 0 3 0 0 0 0 0 1)
+		 (1 0 0 0 0 0 0 7 0 4 4 0 0 0 1)
+		 (1 0 0 0 0 0 3 3 3 0 0 0 0 0 1)
+		 (1 1 1 1 1 1 1 1 1 1 1 1 1 1 1))
+	:chest-max 5
+	:chest-init-pos  '(:xmin  1 :xmax 10  :ymin  1 :ymax 10)
+	:kaidan-init-pos '(:xmin  1 :xmax  4  :ymin  1 :ymax 13)
+	:player-init-pos '(:xmin 11 :xmax 13  :ymin  1 :ymax  3)
+	:enemy-init-pos  '(:xmin  1 :xmax 13  :ymin  5 :ymax 13)))
+
+
 (defparameter *stage-list*
   (list *stage1* *stage2* *stage3* *stage4* *stage5* *stage6* *stage7* *stage8*
-	*stage9* *stage10* *stage11* *stage12*))
+	*stage9* *stage10* *stage11* *stage12* *stage13*))

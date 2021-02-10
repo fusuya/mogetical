@@ -171,7 +171,8 @@
 (defun set-bgm (&optional (new-alias nil))
   (cond
     ((or (equal *bgm* new-alias)
-	 (find *bgm* *battle-bgm-list* :test #'equal))
+	 (and (eq (state *p*) :battle)
+	      (find *bgm* *battle-bgm-list* :test #'equal)))
      (let ((st (bgm-status *bgm*)))
        (when (equal st "stopped")
 	 (bgm-play *bgm*))))
@@ -547,7 +548,7 @@
     (let* ((weapon (job-init-weapon num))
 	   (armor (item-make (aref *weapondescs* +a_clothes+)))
 	   (chara (make-instance 'unit :job num :hp 30 :maxhp 30
-				 :buki weapon :vit 3 :str 6 :agi 2 :res 3 :int 3
+				 :buki weapon :vit 3 :str 7 :agi 2 :res 3 :int 3
 				 :armor armor :state :action
 				 :team :ally :w 32 :h 32 :moto-w 32 :moto-h 32
 				 :name (nth (random (length *name-list*)) *name-list*)
