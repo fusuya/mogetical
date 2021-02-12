@@ -217,6 +217,12 @@
   (rectangle *hmemdc* 0 0 *change-screen-w* *change-screen-h*))
 
 
+;;BGMoffボタン
+(defun render-bgmonoff-button ()
+  (let ((str (if (eq (bgm *p*) :on) "BGM OFF" "BGM ON")))
+  (create-render-button *bgmoff-x1* *bgmoff-x2* *bgmoff-y1* *bgmoff-y2*
+			str (+ *bgmoff-x1* 3) *bgmoff-y1* :font *font20*)))
+  
 
 ;;持っている武器を表示 TODO 
 (Defun render-weapon-list ()
@@ -293,6 +299,7 @@
 ;;武器変更画面
 (defun render-weapon-change-gamen ()
   (render-background )
+  (render-bgmonoff-button)
   (render-weapon-list)
   (with-slots (selected) *mouse*
     (select-object *hmemdc* *font30*)
@@ -340,7 +347,7 @@
 
 ;;キャラのステータス表示
 (defun render-chara-status (p x)
-  (with-slots (buki) p
+  (with-slots (buki armor) p
   (let* ((num 50))
 	 ;;(cell (aref *celldescs* (aref (field *donjon*) (y p) (x p)))))
     (macrolet ((hoge (n)
@@ -355,7 +362,7 @@
 	(text-out *hmemdc* (format nil "Lv:~2d" (level p)) x (hoge num))
 	(text-out *hmemdc* (format nil "HP:~2d/~2d" (hp p) (maxhp p)) x (hoge num))
 	(text-out *hmemdc* (format nil " 攻  :~2d" (+ (str p) kou)) x (hoge num))
-	(text-out *hmemdc* (format nil " 防  :~2d" (vit p)) x (hoge num))
+	(text-out *hmemdc* (format nil " 防  :~2d" (+ (vit p) (def armor))) x (hoge num))
 	(text-out *hmemdc* (format nil " 速  :~2d" (agi p)) x (hoge num))
 	(text-out *hmemdc* (format nil "魔攻:~2d" (+ (int p) makou)) x (hoge num))
 	(text-out *hmemdc* (format nil "魔防:~2d" (res p)) x (hoge num))
@@ -363,6 +370,7 @@
 	(render-bar (+ x 50) (+ num 27) (+ num 6) (expe p) (lvup-exp p) 100)
 	(when (buki p)
 	  (text-out *hmemdc* (format nil "武器：~a" (name (buki p))) x (hoge num)))
+	(text-out *hmemdc* (format nil "防具：~a" (name armor)) x (hoge num))
 	(text-out *hmemdc* (format nil "~a" (if (eq (state p) :action) "行動可" "行動済み")) x (hoge num)))))))
 	;;(text-out *hmemdc* (format nil "~a" (cell p)) x (hoge num)))))))
 	;;(text-out *hmemdc* (format nil "x:~a y:~a" (x p) (y p)) x (hoge num)))))))
@@ -586,6 +594,7 @@
 ;;出撃準備画面を表示
 (defun render-battle-preparation ()
   (render-background)
+  (render-bgmonoff-button)
   (render-field)
   (render-items)
   (render-enemies)
@@ -603,6 +612,7 @@
 ;;バトル画面を表示
 (defun render-battle ()
   (render-background)
+  (render-bgmonoff-button)
   (render-field t)
   (render-items)
   (render-status)
@@ -627,6 +637,7 @@
 ;;マップを表示
 (defun render-donjon ()
   (render-background)
+  (render-bgmonoff-button)
   (render-field)
   (render-fight-party)
   (render-unit-status-on-mouse)
@@ -673,6 +684,7 @@
 ;;タイトル画面
 (defun render-title-gamen ()
   (render-background)
+  (render-bgmonoff-button)
   (select-object *hmemdc* *font140*)
   ;;(set-bk-mode *hmemdc* :transparent)
   (set-text-color *hmemdc* (encode-rgb 0 155 255))
@@ -683,6 +695,7 @@
 				"おわる" *title-end-x1* *title-end-y1* :font *font40*)
   (select-object *hmemdc* *font40*)
   (set-text-color *hmemdc* (encode-rgb 255 255 255))
+  
   (text-out *hmemdc* (format nil "x:~d y:~d" (x *mouse*) (y *mouse*)) 300 200)
   (text-out *hmemdc* (format nil "winx:~d winy:~d" *change-screen-w* *change-screen-h*) 300 250))
    
@@ -693,6 +706,7 @@
 ;;ゲームオーバー画面
 (defun render-gameover-gamen ()
   (render-background)
+  (render-bgmonoff-button)
   (select-object *hmemdc* *font140*)
   ;;(set-bk-mode *hmemdc* :transparent)
   (set-text-color *hmemdc* (encode-rgb 0 155 255))
@@ -716,6 +730,7 @@
   (let ((time1 (- (endtime *p*) (starttime *p*))))
     (multiple-value-bind (h m s ms) (get-hms time1)
       (render-background)
+      (render-bgmonoff-button)
       (select-object *hmemdc* *font70*)
       ;;(set-bk-mode *hmemdc* :transparent)
       (set-text-color *hmemdc* (encode-rgb 0 155 255))
@@ -763,6 +778,7 @@
 ;;初期クラス表示
 (defun render-init-class ()
   (let ((mouse (party-edit-gamen-mouse-pos)))
+    (render-bgmonoff-button)
     (select-object *hmemdc* (get-stock-object :white-brush))
     (cond
       ((and mouse (>= 6 mouse))

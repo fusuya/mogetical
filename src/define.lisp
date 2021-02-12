@@ -258,6 +258,12 @@
 (defparameter *selected-unit-status-x* (+ *map-w* 10))
 (defparameter *cursor-pos-unit-status-x* (+ *selected-unit-status-x* 200))
 
+;;BGMOFFボタン
+(defparameter *bgmoff-x1* 760)
+(defparameter *bgmoff-x2* 860)
+(defparameter *bgmoff-y1* 535)
+(defparameter *bgmoff-y2* 560)
+
 ;;タイトル画面スタートボタン
 (defparameter *title-start-x1* 330)
 (defparameter *title-start-x2* 500)
@@ -525,7 +531,7 @@
   ((party           :accessor party       :initform nil    :initarg :party)
    (cursor          :accessor cursor      :initform 0      :initarg :cursor)
    (item            :accessor item        :initform nil    :initarg :item)
-   (bgm             :accessor bgm         :initform nil    :initarg :bgm)
+   (bgm             :accessor bgm         :initform :on    :initarg :bgm)
    (endtime         :accessor endtime     :initform 0      :initarg :endtime)
    (starttime       :accessor starttime   :initform 0      :initarg :starttime)
    (save            :accessor save        :initform nil    :initarg :save)

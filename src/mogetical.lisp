@@ -68,7 +68,7 @@
 (defun set-next-stage ()
   (setf (save *p*) nil)
   (incf (stage *donjon*))
-  (if (= (stage *donjon*) 101) ;;100界でｵﾜﾘ
+  (if (= (stage *donjon*) 30) ;;30界でｵﾜﾘ
       (setf (endtime *p*) (get-internal-real-time)
 	    (state *p*) :ending)
       (progn (adjust-appear-enemy)
@@ -170,13 +170,14 @@
 ;;bgm 
 (defun set-bgm (&optional (new-alias nil))
   (cond
-    ((or (equal *bgm* new-alias)
-	 (and (eq (state *p*) :battle)
-	      (find *bgm* *battle-bgm-list* :test #'equal)))
+    ((and (eq (bgm *p*) :on)
+	  (or (equal *bgm* new-alias)
+	      (and (eq (state *p*) :battle)
+		   (find *bgm* *battle-bgm-list* :test #'equal))))
      (let ((st (bgm-status *bgm*)))
        (when (equal st "stopped")
 	 (bgm-play *bgm*))))
-    (t
+    ((eq (bgm *p*) :on)
      (when (eq (state *p*) :battle)
        (setf new-alias (nth (random (length *battle-bgm-list*)) *battle-bgm-list*)))
      (bgm-stop *bgm*)
@@ -189,6 +190,25 @@
 (defun unit-dist (unit1 unit2)
   (+ (abs (- (x unit1) (x unit2)))
      (abs (- (y unit1) (y unit2)))))
+
+
+;;アイテムを入手
+(defun get-item (unit)
+  (sound-play *chest-wav*) 
+  ;;プレイヤーのアイテムリストに追加
+  (let* ((item-data (if (> (random 10) 8)
+			(aref *weapondescs* +w_potion+)
+			(aref *weapondescs* (weightpick (drop-item *donjon*)))))
+	 (new-item (item-make item-data)))
+    (setf (new new-item) t
+	  (getitem *p*) (make-instance 'itemtext :name (name new-item)
+				       :posx (- (posx unit)
+						(* (length (name new-item)) 10))
+				       :posy (posy unit)
+				       :maxy (- (posy unit) 20)))
+    
+    (push new-item (item *p*))))
+    
 
 ;;ダメージ計算
 (defmethod damage-calc (atker defender)
@@ -220,9 +240,11 @@
 
 
 
-;;経験値取得
+;;経験値取得 priestも経験値ゲット
 (defun player-get-exp (atker defender)
-  (incf (expe atker) (expe defender))
+  (if (eq (atktype (buki atker)) :heal)
+      (incf (expe atker) (+ (dmg defender) (level defender)))
+      (incf (expe atker) (expe defender)))
   (loop while (>= (expe atker) (lvup-exp atker))
      do
        (sound-play *lvup-wav*)
@@ -254,10 +276,15 @@
 (defun set-damage (atker defender)
   (with-slots (x y pos obj-type hp atk-spd) defender
     (add-damage-font atker defender)
-    (when (>= 0 (hp defender)) ;; hpが0以下になったら死亡
-      (setf (state defender) :dead)
-      (player-get-exp atker defender))))
-
+    (cond
+      ((>= 0 (hp defender)) ;; hpが0以下になったら死亡
+       (setf (state defender) :dead)
+       (player-get-exp atker defender)
+       (if (= (random 2) 1)
+	   (get-item atker)))
+      ((eq (atktype (buki atker)) :heal)
+       (player-get-exp atker defender)))))
+  
 
 
 
@@ -451,18 +478,19 @@
 		(remove e (enemies *donjon*) :test #'equal)))))
 
 
-(defun start-name ()
-  (setf (state *p*) :name
-	(atk-c *p*) 0
-	(cursor *p*) 0))
-
 
 ;;ゲームを開始する
 (defun start-game ()
-  (init-game)
+  ;;(init-game)
   (setf (state *p*) :initpartyedit))
 ;; *start-time* (get-internal-real-time)))
 
+
+(defun bgm-onoff ()
+  (if (eq (bgm *p*) :on)
+      (progn (setf (bgm *p*) :off)
+	     (bgm-stop *bgm*))
+      (progn (setf (bgm *p*) :on))))
 
 ;;ダンジョンのキャラ初期位置セット
 (defun set-chara-init-position ()
@@ -513,6 +541,10 @@
     (set-bgm *titlebgm*)
     (when left
       (cond
+	;;BGMONOFF
+	((and (>= *bgmoff-x2* x *bgmoff-x1*)
+	      (>= *bgmoff-y2* y *bgmoff-y1*))
+	 (bgm-onoff))
 	((and (>= *title-start-x2* x *title-start-x1*)
 	      (>= *title-start-y2* y *title-start-y1*))
 	 (sound-play *select-wav*)
@@ -527,6 +559,10 @@
   (with-slots (left x y) *mouse*
     (when left
       (cond
+	;;BGMONOFF
+	((and (>= *bgmoff-x2* x *bgmoff-x1*)
+	      (>= *bgmoff-y2* y *bgmoff-y1*))
+	 (bgm-onoff))
 	((and (>= *title-start-x2* x *title-start-x1*)
 	      (>= *title-start-y2* y *title-start-y1*))
 	 (sound-play *select-wav*)
@@ -570,15 +606,20 @@
 
 ;;初期パーティ編成画面
 (defun update-init-party-edit-gamen ()
-  (with-slots (left right) *mouse*
+  (with-slots (left right x y) *mouse*
     (set-bgm *editbgm*)
     (when (or left right)
       (let ((mouse (party-edit-gamen-mouse-pos)))
 	(cond
+	  ;;BGMONOFF
+	  ((and (>= *bgmoff-x2* x *bgmoff-x1*)
+		(>= *bgmoff-y2* y *bgmoff-y1*))
+	   (bgm-onoff))
 	  ((null mouse))
 	  ((and left (= mouse 12) (>= 5 (length (party *p*)) 1))
 	   (sound-play *select-wav*) 
-	   (setf (state *p*) :battle-preparation)
+	   (setf (state *p*) :battle-preparation
+		 (starttime *p*) (get-internal-real-time))
 	   (set-chara-init-position))
 	  ((and right (>= 11 mouse 7)) (delete-chara-init-party mouse))
 	  ((and left (>= 6 mouse))
@@ -594,6 +635,11 @@
     (save-player-data *p* *backup-player-data*))
   (with-slots (left right selected x y) *mouse*
     (cond
+      ;;BGMONOFF
+      ((and left
+	    (>= *bgmoff-x2* x *bgmoff-x1*)
+	    (>= *bgmoff-y2* y *bgmoff-y1*))
+       (bgm-onoff))
       ;;出撃ボタン
       ((and left ;;(null selected)
 	    (>= *battle-btn-x2* x *battle-btn-x1*)
@@ -732,28 +778,16 @@
   (eq (aref (field *donjon*) y x) +kaidan+))
 
 
+
 ;;宝箱にとまったか
 (defun chest-check (unit)
-  (loop :for item :in (chest *donjon*)
-     :do (when (and (= (x item) (x unit))
-		    (= (y item) (y unit)))
-	   (sound-play *chest-wav*) 
-	   ;;プレイヤーのアイテムリストに追加
-	   (let* ((item-data (if (> (random 5) 3)
-				 (aref *weapondescs* +w_potion+)
-				 (aref *weapondescs* (weightpick (drop-item *donjon*)))))
-		  (new-item (item-make item-data)))
-	     (setf (new new-item) t
-		   (getitem *p*) (make-instance 'itemtext :name (name new-item)
-						:posx (- (posx unit)
-						      (* (length (name new-item)) 10))
-						:posy (posy unit)
-						:maxy (- (posy unit) 20)))
-	     
-	     (push new-item (item *p*))
-	     ;;宝箱消す
-	     (setf (chest *donjon*) (remove item (chest *donjon*) :test #'equal))
-	     (return)))))
+  (loop :for chest :in (chest *donjon*)
+     :do (when (and (= (x chest) (x unit))
+		    (= (y chest) (y unit)))
+	   (get-item unit)
+	   ;;宝箱消す
+	   (setf (chest *donjon*) (remove chest (chest *donjon*) :test #'equal))
+	   (return))))
 
 ;;次のステージ行く前の処理 
 (defun reset-unit-data ()
@@ -835,6 +869,11 @@
 (defun update-battle-ally-mouse-act (hwnd)
   (with-slots (left right selected x y) *mouse*
     (cond
+      ;;BGMONOFF
+      ((and left
+	    (>= *bgmoff-x2* x *bgmoff-x1*)
+	    (>= *bgmoff-y2* y *bgmoff-y1*))
+       (bgm-onoff))
       ;;装備変更ボタン
       ((and left selected (eq (team selected) :ally)
 	    (>= *w-change-btn-y2* y *w-change-btn-y1* )
