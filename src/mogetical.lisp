@@ -243,7 +243,7 @@
 ;;経験値取得 priestも経験値ゲット
 (defun player-get-exp (atker defender)
   (if (eq (atktype (buki atker)) :heal)
-      (incf (expe atker) (+ (dmg defender) (level defender)))
+      (incf (expe atker) (+ (dmg-num (dmg defender)) (level defender)))
       (incf (expe atker) (expe defender)))
   (loop while (>= (expe atker) (lvup-exp atker))
      do
@@ -280,8 +280,9 @@
       ((>= 0 (hp defender)) ;; hpが0以下になったら死亡
        (setf (state defender) :dead)
        (player-get-exp atker defender)
-       (if (= (random 2) 1)
-	   (get-item atker)))
+       (when (and (eq (team atker) :ally)
+		  (= (random 2) 1))
+	 (get-item atker)))
       ((eq (atktype (buki atker)) :heal)
        (player-get-exp atker defender)))))
   
@@ -584,7 +585,7 @@
     (let* ((weapon (job-init-weapon num))
 	   (armor (item-make (aref *weapondescs* +a_clothes+)))
 	   (chara (make-instance 'unit :job num :hp 30 :maxhp 30
-				 :buki weapon :vit 3 :str 7 :agi 2 :res 3 :int 3
+				 :buki weapon :vit 3 :str 70 :agi 2 :res 3 :int 3
 				 :armor armor :state :action
 				 :team :ally :w 32 :h 32 :moto-w 32 :moto-h 32
 				 :name (nth (random (length *name-list*)) *name-list*)
