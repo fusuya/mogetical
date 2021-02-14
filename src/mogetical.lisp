@@ -197,8 +197,8 @@
   (sound-play *chest-wav*) 
   ;;プレイヤーのアイテムリストに追加
   (let* ((item-data (if (> (random 10) 8)
-			(aref *weapondescs* +w_potion+)
-			(aref *weapondescs* (weightpick (drop-item *donjon*)))))
+			+w_potion+
+			(weightpick (drop-item *donjon*))))
 	 (new-item (item-make item-data)))
     (setf (new new-item) t
 	  (getitem *p*) (make-instance 'itemtext :name (name new-item)
@@ -550,6 +550,10 @@
 	      (>= *title-start-y2* y *title-start-y1*))
 	 (sound-play *select-wav*)
 	 (start-game))
+	((and (>= *continue-x2* x *continue-x1*)
+	      (>= *continue-y2* y *continue-y1*))
+	 (sound-play *select-wav*)
+	 (setf (state *p*) :load))
 	((and (>= *title-end-x2* x *title-end-x1*)
 	      (>= *title-end-y2* y *title-end-y1*))
 	 (sound-play *select-wav*)
@@ -583,7 +587,7 @@
 (defun push-chara-init-party (num)
   (when (> 5 (length (party *p*)))
     (let* ((weapon (job-init-weapon num))
-	   (armor (item-make (aref *weapondescs* +a_clothes+)))
+	   (armor (item-make  +a_clothes+))
 	   (chara (make-instance 'unit :job num :hp 30 :maxhp 30
 				 :buki weapon :vit 3 :str 7 :agi 2 :res 3 :int 3
 				 :armor armor :state :action
@@ -627,6 +631,30 @@
 	   (sound-play *select-wav*) 
 	   (push-chara-init-party mouse)))))))
 
+;;セーブ
+(defun update-save-gamen ()
+  (with-slots (left right selected x y) *mouse*
+    (cond
+      ;;BGMONOFF
+      ((and left
+	    (>= *save-slot1-x2* x *save-slot1-x1*)
+	    (>= *save-slot1-y2* y *save-slot1-y1*))
+       (save-suru 1))
+      ((and left
+	    (>= *save-end-x2* x *save-end-x1*)
+	    (>= *save-end-y2* y *save-end-y1*))
+       (setf (state *p*) :battle-preparation)))))
+
+;;ロード
+(defun update-load-gamen ()
+  (with-slots (left right selected x y) *mouse*
+    (cond
+      ;;BGMONOFF
+      ((and left
+	    (>= *save-slot1-x2* x *save-slot1-x1*)
+	    (>= *save-slot1-y2* y *save-slot1-y1*))
+       (load-suru 1)))))
+
 
 ;;出撃準備画面 マウスアクション
 (defun update-battle-preparation ()
@@ -640,10 +668,15 @@
       ((and left
 	    (>= *bgmoff-x2* x *bgmoff-x1*)
 	    (>= *bgmoff-y2* y *bgmoff-y1*))
-       ;; (progn (reset-unit-data)
-       ;; 	      (set-next-stage)
-       ;; 	      (set-chara-init-position))
        (bgm-onoff))
+      ;;セーブ
+      ((and left
+	    (>= *save-x2* x *save-x1*)
+	    (>= *save-y2* y *save-y1*))
+       (sound-play *select-wav*)
+       (setf (prestate *P*) :battle-preparation
+	     (state *p*) :save
+	     selected nil))
       ;;出撃ボタン
       ((and left ;;(null selected)
 	    (>= *battle-btn-x2* x *battle-btn-x1*)
@@ -813,7 +846,7 @@
   (with-slots (buki) unit
     (when (eq (categoly buki) :item)
       (setf (item *p*) (remove buki (item *p*) ::test #'equal)
-	    buki (item-make (aref *weapondescs* +w_knuckle+))))))
+	    buki (item-make +w_knuckle+)))))
 
 
 ;;選択キャラ解除
@@ -1163,6 +1196,10 @@
      (update-title-and-ending-gamen hwnd))
     (:initpartyedit
      (update-init-party-edit-gamen))
+    (:save
+     (update-save-gamen))
+    (:load
+     (update-load-gamen))
     (:battle-preparation
      (update-battle-preparation))
     (:weaponchange

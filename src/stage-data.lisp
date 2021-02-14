@@ -42,21 +42,21 @@
     ((:slime :orc :brigand :hydra :dragon :yote1 :goron)
      (job-init-weapon job))
     (:warrior
-     (item-make (aref *weapondescs* (weightpick *warrior-weapon*))))
+     (item-make  (weightpick *warrior-weapon*)))
     (:sorcerer
-     (item-make (aref *weapondescs* (weightpick *sorcerar-weapon*))))
+     (item-make  (weightpick *sorcerar-weapon*)))
     (:priest
-     (item-make (aref *weapondescs* (weightpick *priest-weapon*))))
+     (item-make  (weightpick *priest-weapon*)))
     (:thief
-     (item-make (aref *weapondescs* (weightpick *thief-weapon*))))
+     (item-make  (weightpick *thief-weapon*)))
     (:archer
-     (item-make (aref *weapondescs* (weightpick *archer-weapon*))))
+     (item-make  (weightpick *archer-weapon*)))
     ((:knight :pknight)
-     (item-make (aref *weapondescs* (weightpick *knight-weapon*))))))
+     (item-make  (weightpick *knight-weapon*)))))
 
 ;;敵生成時に装備する防具
 (defun enemy-equip-armor ()
-  (item-make (aref *weapondescs* (weightpick *armor-list*))))
+  (item-make (weightpick *armor-list*)))
 
 
 ;;レヴェルアップ時ステータス上昇
@@ -175,15 +175,16 @@
       (setf drop-item
 	    (rate-decf drop-item))))
 
-(defun create-stage ()
-  (let ((stage (copy-tree (nth (random (length *stage-list*)) *stage-list*))))
+(defun create-stage (&optional (num nil))
+  (let* ((num (if num num (random (length *stage-list*))))
+	 (stage (copy-tree (nth num *stage-list*))))
     (setf (field *donjon*) (make-array (list 15 15) :initial-contents (getf stage :field))
 	  (player-init-pos *donjon*) (getf stage :player-init-pos)
 	  (enemy-init-pos *donjon*)  (getf stage :enemy-init-pos)
 	  (kaidan-init-pos *donjon*) (getf stage :kaidan-init-pos)
 	  (chest-init-pos *donjon*)  (getf stage :chest-init-pos)
 	  (chest-max *donjon*)       (getf stage :chest-max)
-	  ;;(drop-item *donjon*)       nil
+	  (donjonnum *donjon*)       num
 	  (chest *donjon*)           nil
 	  (enemies *donjon*)         nil)
     (set-kaidan *donjon*)

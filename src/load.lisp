@@ -9,7 +9,7 @@
 (load "define.lisp" :external-format :utf-8)
 (load "name.lisp" :external-format :utf-8)
 
-
+(load "save.lisp" :external-format :utf-8)
 (load "mci.lisp" :external-format :utf-8)
 (load "item.lisp" :external-format :utf-8)
 (load "stage.lisp" :external-format :utf-8)

@@ -518,6 +518,12 @@
   (create-render-button *battle-btn-x1* *battle-btn-x2* *battle-btn-y1* *battle-btn-y2*
 			"出撃" 500 450 :font *font40*))
 
+;;セーブボタン
+(defun render-save-button ()
+  (create-render-button *save-x1* *save-x2* *save-y1* *save-y2*
+			"セーブ" *save-x1* *save-y1* :font *font40*))
+
+
 (defun render-pre-battle-explain ()
   (select-object *hmemdc* *font40*)
   (set-text-color *hmemdc* (encode-rgb 255 255 255))
@@ -591,6 +597,23 @@
        ;; 	 (render-hpbar e))))
 
 
+
+(defun render-save-slots ()
+  (create-render-button *save-slot1-x1* *save-slot1-x2* *save-slot1-y1* *save-slot1-y2*
+			"スロット１" *save-slot1-x1* *save-slot1-y1* :font *font40*)
+  (create-render-button *save-end-x1* *save-end-x2* *save-end-y1* *save-end-y2*
+			"終了" *save-end-x1* *save-end-y1* :font *font40*))
+
+
+;;セーブ画面
+(defun render-save-gamen ()
+  (render-background)
+  (render-save-slots))
+
+(defun render-load-gamen ()
+  (render-background)
+  (render-save-slots))
+
 ;;出撃準備画面を表示
 (defun render-battle-preparation ()
   (render-background)
@@ -607,6 +630,7 @@
   (render-selected-chara)
   ;;(render-weapon-change-btn)
   (render-pre-battle-explain)
+  (render-save-button)
   (render-ready-btn))
 
 ;;バトル画面を表示
@@ -691,6 +715,8 @@
   (text-out *hmemdc* "もげてぃかる仮" 50 70)
   (create-render-button-no-waku *title-start-x1*  *title-start-x2* *title-start-y1* *title-start-y2*
 				"はじめる" *title-start-x1* *title-start-y1* :font *font40*)
+  (create-render-button-no-waku *continue-x1*  *continue-x2* *continue-y1* *continue-y2*
+				"つづきから" *continue-x1* *continue-y1* :font *font40*)
   (create-render-button-no-waku *title-end-x1*  *title-end-x2* *title-end-y1* *title-end-y2*
 				"おわる" *title-end-x1* *title-end-y1* :font *font40*)
   (select-object *hmemdc* *font40*)
@@ -838,6 +864,10 @@
      (render-party-edit-gamen))
     (:battle-preparation
      (render-battle-preparation))
+    (:save
+     (render-save-gamen))
+    (:load
+     (render-load-gamen))
     (:weaponchange
      (render-weapon-change-gamen))
     (:battle

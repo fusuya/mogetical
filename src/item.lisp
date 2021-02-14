@@ -503,7 +503,7 @@
 (defun set-test-item-list ()
   (setf *test-buki-item* 
 	(loop :for n :from 0 :below (length *weapondescs*)
-	   :collect (item-make (aref *weapondescs* n)))))
+	   :collect (item-make n))))
 
 
 ;;重み付け抽選-----------------------------------------------
@@ -525,21 +525,21 @@
 ;;ジョブ別初期武器
 (defun job-init-weapon (job)
   (cond
-    ((= job +job_warrior+)  (item-make (aref *weapondescs* +w_wood_sword+)))
-    ((= job +job_sorcerer+) (item-make (aref *weapondescs* +w_rod+)))
-    ((= job +job_priest+)   (item-make (aref *weapondescs* +w_staff+)))
-    ((= job +job_archer+)   (item-make (aref *weapondescs* +w_bow+)))
-    ((= job +job_s_knight+) (item-make (aref *weapondescs* +w_spear+)))
-    ((= job +job_thief+)    (item-make (aref *weapondescs* +w_knife+)))
-    ((= job +job_p_knight+) (item-make (aref *weapondescs* +w_spear+)))
-    ((= job +job_brigand+)  (item-make (aref *weapondescs* +w_bow+)))
-    ((= job +job_dragon+)   (item-make (aref *weapondescs* +w_dragon_crow+)))
-    ((= job +job_hydra+)    (item-make (aref *weapondescs* +w_hydra_fang+)))
-    ((= job +job_orc+)      (item-make (aref *weapondescs* +w_ax+)))
-    ((= job +job_slime+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ((= job +job_yote1+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ((= job +job_goron+)    (item-make (aref *weapondescs* +w_numenume+)))
-    ))
+    ((= job +job_warrior+)  (item-make +w_wood_sword+))
+    ((= job +job_sorcerer+) (item-make +w_rod+))
+    ((= job +job_priest+)   (item-make +w_staff+))
+    ((= job +job_archer+)   (item-make +w_bow+))
+    ((= job +job_s_knight+) (item-make +w_spear+))
+    ((= job +job_thief+)    (item-make +w_knife+))
+    ((= job +job_p_knight+) (item-make +w_spear+))
+    ((= job +job_brigand+)  (item-make +w_bow+))
+    ((= job +job_dragon+)   (item-make +w_dragon_crow+))
+    ((= job +job_hydra+)    (item-make +w_hydra_fang+))
+    ((= job +job_orc+)      (item-make +w_ax+))
+    ((= job +job_slime+)    (item-make +w_numenume+))
+    ((= job +job_yote1+)    (item-make +w_numenume+))
+    ((= job +job_goron+)    (item-make +w_numenume+))))
+    
 
 
 ;;武器のステータス取得

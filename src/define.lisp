@@ -42,6 +42,10 @@
 (defvar *waku-aka* nil)
 (defparameter *job-img* nil)
 
+(defparameter *load-units-data* nil)
+(defparameter *load-stage* nil)
+(defparameter *load-party-item* nil)
+
 (defun load-images ()
   (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
@@ -296,6 +300,21 @@
 (defparameter *battle-btn-x2* 580)
 (defparameter *battle-btn-y1* 450)
 (defparameter *battle-btn-y2* 490)
+;;セーブボタン
+(defparameter *save-x1* 495)
+(defparameter *save-x2* 590)
+(defparameter *save-y1* 500)
+(defparameter *save-y2* 540)
+;;セーブスロット1
+(defparameter *save-slot1-x1* 200)
+(defparameter *save-slot1-x2* 400)
+(defparameter *save-slot1-y1* 200)
+(defparameter *save-slot1-y2* 250)
+;;セーブ終わり
+(defparameter *save-end-x1* 500)
+(defparameter *save-end-x2* 580)
+(defparameter *save-end-y1* 500)
+(defparameter *save-end-y2* 550)
 ;;アイテムリストの次へボタン
 (defparameter *item-next-btn-x1* 180)
 (defparameter *item-next-btn-x2* 230)
@@ -429,7 +448,7 @@
    (chest-max :accessor chest-max :initform 0 :initarg :chest-max)
    (kaidan-init-pos :accessor kaidan-init-pos :initform nil :initarg :kaidan-init-pos)
    (appear-enemy-rate :accessor appear-enemy-rate  :initform nil  :initarg :appear-enemy-rate) ;;床
-   (walls     :accessor walls      :initform nil  :initarg :walls)
+   (donjonnum     :accessor donjonnum      :initform nil  :initarg :donjonnum)
    (blocks    :accessor blocks     :initform nil  :initarg :blocks) ;;ブロック
    (chest     :accessor chest    :initform nil  :initarg :chest) ;;宝箱
    (stage      :accessor stage       :initform 1   :initarg :stage)
@@ -702,7 +721,8 @@
    (rangemin   :accessor rangemin  :initform 0   :initarg :rangemin)
    (rangemax   :accessor rangemax  :initform 0   :initarg :rangemax)
    (blk        :accessor blk      :initform nil :initarg :blk)
-   (def        :accessor def       :initform 0   :initarg :def)))
+   (def        :accessor def       :initform 0   :initarg :def)
+   (itemnum        :accessor itemnum      :initform nil :initarg :itemnum)))
 
 (defclass weapondesc (itemdesc)
   ())
@@ -712,18 +732,19 @@
   ())
 
 
-(defun item-make (item)
-  (let ((cat (getf item :categoly)))
+(defun item-make (itemnum)
+  (let* ((item (aref *weapondescs* itemnum))
+	(cat (getf item :categoly)))
     (case cat
       (:armor
        (make-instance 'armordesc :name (getf item :name) :def (getf item :def)
-		 :categoly cat
+		 :categoly cat :itemnum itemnum
 		 :blk (getf item :blk) :price (getf item :price)))
       (otherwise
        (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
 		 :hit (getf item :hit) :critical (getf item :critical) :categoly cat
 		 :rangemin (getf item :rangemin) :rangemax (getf item :rangemax)
-		 :tokkou (getf item :tokkou)
+		 :tokkou (getf item :tokkou) :itemnum itemnum
 		 :price (getf item :price) :atktype (getf item :atktype))))))
 
 (defun weapon-make (item)
