@@ -493,25 +493,7 @@
 	     (bgm-stop *bgm*))
       (progn (setf (bgm *p*) :on))))
 
-;;ダンジョンのキャラ初期位置セット
-(defun set-chara-init-position ()
-  (with-slots (player-init-pos field) *donjon*
-    (let ((num 0))
-      (loop
-	 ;;:for chara :in (party *p*)
-	 :for posy :from (getf player-init-pos :ymin) :to (getf player-init-pos :ymax)
-	 :do (loop :for posx :from (getf player-init-pos :xmin) :to (getf player-init-pos :xmax)
-		:do (let ((chara (nth num (party *p*))))
-		      (setf (x chara) posx
-			    (y chara) posy
-			    (posx chara) (* (x chara) *obj-w*)
-			    (posy chara) (* (y chara) *obj-h*)
-			    (cell chara) (aref field (y chara) (x chara)))
-		      (incf num)
-		      (when (= num (length (party *p*)))
-			(return-from set-chara-init-position))))
-		      ;;(setf (aref field (y chara) (x chara)) :p)
-	   ))))
+
 
 
 ;;全滅したとこから再戦 backupから*p*にコピーする

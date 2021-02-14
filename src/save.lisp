@@ -1,5 +1,25 @@
 ;;ドンジョンのデータも
 
+;;ダンジョンのキャラ初期位置セット
+(defun set-chara-init-position ()
+  (with-slots (player-init-pos field) *donjon*
+    (let ((num 0))
+      (loop
+	 ;;:for chara :in (party *p*)
+	 :for posy :from (getf player-init-pos :ymin) :to (getf player-init-pos :ymax)
+	 :do (loop :for posx :from (getf player-init-pos :xmin) :to (getf player-init-pos :xmax)
+		:do (let ((chara (nth num (party *p*))))
+		      (setf (x chara) posx
+			    (y chara) posy
+			    (posx chara) (* (x chara) *obj-w*)
+			    (posy chara) (* (y chara) *obj-h*)
+			    (cell chara) (aref field (y chara) (x chara)))
+		      (incf num)
+		      (when (= num (length (party *p*)))
+			(return-from set-chara-init-position))))
+		      ;;(setf (aref field (y chara) (x chara)) :p)
+	   ))))
+
 (defun save-party-data ()
   (loop :for p :in (party *p*)
      :collect (list (name p) (job p) (hp p) (maxhp p) (agi p)
@@ -18,6 +38,7 @@
 	 (str (concatenate 'string path (write-to-string slot))))
     (with-open-file (out str :direction :output
 			 :if-exists :supersede)
+      (format out "(in-package moge)~%")
       (format out "(setf *load-units-data* '~s)~%" (save-party-data))
       (format out "(setf *load-stage* ~d)~%" (donjonnum *donjon*))
       (format out "(setf *load-party-item* '~s)" (save-party-item-data)))))

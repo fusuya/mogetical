@@ -732,20 +732,6 @@
   ())
 
 
-(defun item-make (itemnum)
-  (let* ((item (aref *weapondescs* itemnum))
-	(cat (getf item :categoly)))
-    (case cat
-      (:armor
-       (make-instance 'armordesc :name (getf item :name) :def (getf item :def)
-		 :categoly cat :itemnum itemnum
-		 :blk (getf item :blk) :price (getf item :price)))
-      (otherwise
-       (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
-		 :hit (getf item :hit) :critical (getf item :critical) :categoly cat
-		 :rangemin (getf item :rangemin) :rangemax (getf item :rangemax)
-		 :tokkou (getf item :tokkou) :itemnum itemnum
-		 :price (getf item :price) :atktype (getf item :atktype))))))
 
 (defun weapon-make (item)
   (make-instance 'weapondesc :name (getf item :name) :damage (getf item :damage)
