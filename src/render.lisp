@@ -793,7 +793,7 @@
        (select-object *hmemdc* *font70*)
        (text-out *hmemdc* "出発" 550 400)))
     (loop
-       :for name :in '("戦士" "魔術師" "僧侶" "弓使い" "騎士" "盗賊" "天馬騎士")
+       :for name :in '("戦士" "魔術師" "僧侶" "射手" "騎士" "盗賊" "天馬騎士")
        :for y :from 110 :by 50
        :for mousepos :from 0
        :do

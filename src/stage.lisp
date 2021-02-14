@@ -289,4 +289,8 @@
 
 (defparameter *stage-list*
   (list *stage1* *stage2* *stage3* *stage4* *stage5* *stage6* *stage7* *stage8*
-	*stage9* *stage10* *stage11* *stage12* *stage13*))
+   *stage9* *stage10*
+   *stage11*
+   *stage12*
+   *stage13*
+   ))

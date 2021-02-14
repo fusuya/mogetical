@@ -585,7 +585,7 @@
     (let* ((weapon (job-init-weapon num))
 	   (armor (item-make (aref *weapondescs* +a_clothes+)))
 	   (chara (make-instance 'unit :job num :hp 30 :maxhp 30
-				 :buki weapon :vit 3 :str 70 :agi 2 :res 3 :int 3
+				 :buki weapon :vit 3 :str 7 :agi 2 :res 3 :int 3
 				 :armor armor :state :action
 				 :team :ally :w 32 :h 32 :moto-w 32 :moto-h 32
 				 :name (nth (random (length *name-list*)) *name-list*)
@@ -640,6 +640,9 @@
       ((and left
 	    (>= *bgmoff-x2* x *bgmoff-x1*)
 	    (>= *bgmoff-y2* y *bgmoff-y1*))
+       ;; (progn (reset-unit-data)
+       ;; 	      (set-next-stage)
+       ;; 	      (set-chara-init-position))
        (bgm-onoff))
       ;;出撃ボタン
       ((and left ;;(null selected)
@@ -689,7 +692,7 @@
 		  (posy selected) (* y1 *obj-h*)
 		  (x selected) x1
 		  (y selected) y1)
-	    (push selected (party *p*))
+	    ;;(push selected (party *p*))
 	    (setf selected nil))))))))
     ;;(when selected
      ;; (setf (posx selected) (floor x)
