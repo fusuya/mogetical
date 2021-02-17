@@ -146,12 +146,13 @@
 
 ;;階段セット
 (defun set-kaidan (donjon)
-  (with-slots (field kaidan-init-pos) donjon
+  (with-slots (field kaidan-init-pos kaidan) donjon
     (let* ((xmin (getf kaidan-init-pos :xmin)) (xmax (getf kaidan-init-pos :xmax))
 	   (ymin (getf kaidan-init-pos :ymin)) (ymax (getf kaidan-init-pos :ymax)))
       (destructuring-bind (x y)
 	  (get-init-pos nil xmin xmax ymin ymax)
-	(setf (aref field y x) +kaidan+)))))
+	(setf (aref field y x) +kaidan+
+	      kaidan (list x y))))))
 
 ;;宝箱セット
 (defun set-chest (donjon)

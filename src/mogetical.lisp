@@ -79,7 +79,7 @@
 
 
 ;つつけるようにプレイヤーデータを保存しておく
-(defun save-player-data (moto saki)
+(defun save-temp-player-data (moto saki)
   (with-slots (party cursor item bgm item-page getitem turn prestate state) moto
     (setf (party saki) (loop :for p :in party
 			  :collect (shallow-copy-object p))
@@ -90,8 +90,6 @@
 	  (prestate saki) prestate
 	  (state saki) state)))
 
-(defun save-donjon-data ()
-  )
 
 
 
@@ -494,12 +492,30 @@
       (progn (setf (bgm *p*) :on))))
 
 
-
+;;ダンジョンのキャラ初期位置セット
+(defun set-chara-init-position ()
+  (with-slots (player-init-pos field) *donjon*
+    (let ((num 0))
+      (loop
+	 ;;:for chara :in (party *p*)
+	 :for posy :from (getf player-init-pos :ymin) :to (getf player-init-pos :ymax)
+	 :do (loop :for posx :from (getf player-init-pos :xmin) :to (getf player-init-pos :xmax)
+		:do (let ((chara (nth num (party *p*))))
+		      (setf (x chara) posx
+			    (y chara) posy
+			    (posx chara) (* (x chara) *obj-w*)
+			    (posy chara) (* (y chara) *obj-h*)
+			    (cell chara) (aref field (y chara) (x chara)))
+		      (incf num)
+		      (when (= num (length (party *p*)))
+			(return-from set-chara-init-position))))
+		      ;;(setf (aref field (y chara) (x chara)) :p)
+	   ))))
 
 ;;全滅したとこから再戦 backupから*p*にコピーする
 ;;ステージデータは新しく作る
 (defun continue-game ()
-  (save-player-data *backup-player-data* *p*)
+  (save-temp-player-data *backup-player-data* *p*)
   (create-stage)
   (set-chara-init-position))
 
@@ -532,9 +548,11 @@
 	      (>= *title-start-y2* y *title-start-y1*))
 	 (sound-play *select-wav*)
 	 (start-game))
+	;;ロード
 	((and (>= *continue-x2* x *continue-x1*)
 	      (>= *continue-y2* y *continue-y1*))
 	 (sound-play *select-wav*)
+	 (load-data)
 	 (setf (state *p*) :load))
 	((and (>= *title-end-x2* x *title-end-x1*)
 	      (>= *title-end-y2* y *title-end-y1*))
@@ -623,6 +641,14 @@
 	    (>= *save-slot1-y2* y *save-slot1-y1*))
        (save-suru 1))
       ((and left
+	    (>= *save-slot2-x2* x *save-slot2-x1*)
+	    (>= *save-slot2-y2* y *save-slot2-y1*))
+       (save-suru 2))
+      ((and left
+	    (>= *save-slot3-x2* x *save-slot3-x1*)
+	    (>= *save-slot3-y2* y *save-slot3-y1*))
+       (save-suru 3))
+      ((and left
 	    (>= *save-end-x2* x *save-end-x1*)
 	    (>= *save-end-y2* y *save-end-y1*))
        (setf (state *p*) :battle-preparation)))))
@@ -632,10 +658,22 @@
   (with-slots (left right selected x y) *mouse*
     (cond
       ;;BGMONOFF
-      ((and left
+      ((and left *load-game-data1*
 	    (>= *save-slot1-x2* x *save-slot1-x1*)
 	    (>= *save-slot1-y2* y *save-slot1-y1*))
-       (load-suru 1)))))
+       (load-suru 1))
+      ((and left *load-game-data2*
+	    (>= *save-slot2-x2* x *save-slot2-x1*)
+	    (>= *save-slot2-y2* y *save-slot2-y1*))
+       (load-suru 2))
+      ((and left *load-game-data3*
+	    (>= *save-slot3-x2* x *save-slot3-x1*)
+	    (>= *save-slot3-y2* y *save-slot3-y1*))
+       (load-suru 3))
+      ((and left
+	    (>= *save-end-x2* x *save-end-x1*)
+	    (>= *save-end-y2* y *save-end-y1*))
+       (setf (state *p*) :battle-preparation)))))
 
 
 ;;出撃準備画面 マウスアクション
@@ -643,7 +681,7 @@
   (set-bgm *prebattle*)
   (when (null (save *p*)) ;;プレイヤーデータセーブ
     (setf (save *p*) t)
-    (save-player-data *p* *backup-player-data*))
+    (save-temp-player-data *p* *backup-player-data*))
   (with-slots (left right selected x y) *mouse*
     (cond
       ;;BGMONOFF
@@ -658,6 +696,15 @@
        (sound-play *select-wav*)
        (setf (prestate *P*) :battle-preparation
 	     (state *p*) :save
+	     selected nil))
+      ;;ロード
+      ((and left
+	    (>= *load-x2* x *load-x1*)
+	    (>= *load-y2* y *load-y1*))
+       (sound-play *select-wav*)
+       (load-data)
+       (setf (prestate *P*) :battle-preparation
+	     (state *p*) :load
 	     selected nil))
       ;;出撃ボタン
       ((and left ;;(null selected)

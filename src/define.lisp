@@ -42,9 +42,10 @@
 (defvar *waku-aka* nil)
 (defparameter *job-img* nil)
 
-(defparameter *load-units-data* nil)
-(defparameter *load-stage* nil)
-(defparameter *load-party-item* nil)
+;;game data '(day playerdata donjondata)
+(defparameter *load-game-data1* nil)
+(defparameter *load-game-data2* nil)
+(defparameter *load-game-data3* nil)
 
 (defun load-images ()
   (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap
@@ -305,11 +306,26 @@
 (defparameter *save-x2* 590)
 (defparameter *save-y1* 500)
 (defparameter *save-y2* 540)
+;;ロードボタン
+(defparameter *load-x1* 600)
+(defparameter *load-x2* 695)
+(defparameter *load-y1* 500)
+(defparameter *load-y2* 540)
 ;;セーブスロット1
-(defparameter *save-slot1-x1* 200)
-(defparameter *save-slot1-x2* 400)
+(defparameter *save-slot1-x1* 30)
+(defparameter *save-slot1-x2* 800)
 (defparameter *save-slot1-y1* 200)
 (defparameter *save-slot1-y2* 250)
+;;セーブスロット2
+(defparameter *save-slot2-x1* 30)
+(defparameter *save-slot2-x2* 800)
+(defparameter *save-slot2-y1* 260)
+(defparameter *save-slot2-y2* 310)
+;;セーブスロット3
+(defparameter *save-slot3-x1* 30)
+(defparameter *save-slot3-x2* 800)
+(defparameter *save-slot3-y1* 320)
+(defparameter *save-slot3-y2* 370)
 ;;セーブ終わり
 (defparameter *save-end-x1* 500)
 (defparameter *save-end-x2* 580)
@@ -449,12 +465,11 @@
    (kaidan-init-pos :accessor kaidan-init-pos :initform nil :initarg :kaidan-init-pos)
    (appear-enemy-rate :accessor appear-enemy-rate  :initform nil  :initarg :appear-enemy-rate) ;;床
    (donjonnum     :accessor donjonnum      :initform nil  :initarg :donjonnum)
-   (blocks    :accessor blocks     :initform nil  :initarg :blocks) ;;ブロック
+   (kaidan    :accessor kaidan     :initform nil  :initarg :kaidan) ;;ブロック
    (chest     :accessor chest    :initform nil  :initarg :chest) ;;宝箱
    (stage      :accessor stage       :initform 1   :initarg :stage)
    (chest-init-pos :accessor chest-init-pos  :initform nil  :initarg :chest-init-pos)
-   (drop-item :accessor drop-item  :initform nil :initarg :drop-item))) ;;行き止まりリスト
-
+   (drop-item :accessor drop-item  :initform nil :initarg :drop-item)))
 
 ;;ブロックとか
 (defclass obj ()

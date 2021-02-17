@@ -523,6 +523,10 @@
   (create-render-button *save-x1* *save-x2* *save-y1* *save-y2*
 			"セーブ" *save-x1* *save-y1* :font *font40*))
 
+(defun render-load-button ()
+  (create-render-button *load-x1* *load-x2* *load-y1* *load-y2*
+			"ロード" (+ *load-x1* 4) *load-y1* :font *font40*))
+
 
 (defun render-pre-battle-explain ()
   (select-object *hmemdc* *font40*)
@@ -600,9 +604,33 @@
 
 (defun render-save-slots ()
   (create-render-button *save-slot1-x1* *save-slot1-x2* *save-slot1-y1* *save-slot1-y2*
-			"スロット１" *save-slot1-x1* *save-slot1-y1* :font *font40*)
+			(format nil "slot1 ~a" *save1-day*)
+			(+ *save-slot1-x1* 20) *save-slot1-y1* :font *font40*)
+  (create-render-button *save-slot2-x1* *save-slot2-x2* *save-slot2-y1* *save-slot2-y2*
+			(format nil "slot1 ~a" *save2-day*)
+			(+ *save-slot2-x1* 20) *save-slot2-y1* :font *font40*)
+  (create-render-button *save-slot3-x1* *save-slot3-x2* *save-slot3-y1* *save-slot3-y2*
+			(format nil "slot1 ~a" *save3-day*)
+			(+ *save-slot3-x1* 20) *save-slot3-y1* :font *font40*)
   (create-render-button *save-end-x1* *save-end-x2* *save-end-y1* *save-end-y2*
 			"終了" *save-end-x1* *save-end-y1* :font *font40*))
+
+
+(defun render-load-slots ()
+  (let ((str1 (if *load-game-data1* (car *load-game-data1*) "なし"))
+	(str2 (if *load-game-data2* (car *load-game-data2*) "なし"))
+	(str3 (if *load-game-data3* (car *load-game-data3*) "なし")))
+    (create-render-button *save-slot1-x1* *save-slot1-x2* *save-slot1-y1* *save-slot1-y2*
+			  (format nil "slot1 ~a" str1)
+			  (+ *save-slot1-x1* 20) *save-slot1-y1* :font *font40*)
+    (create-render-button *save-slot2-x1* *save-slot2-x2* *save-slot2-y1* *save-slot2-y2*
+			  (format nil "slot1 ~a" str2)
+			  (+ *save-slot2-x1* 20) *save-slot2-y1* :font *font40*)
+    (create-render-button *save-slot3-x1* *save-slot3-x2* *save-slot3-y1* *save-slot3-y2*
+			  (format nil "slot1 ~a" str3)
+			  (+ *save-slot3-x1* 20) *save-slot3-y1* :font *font40*)
+    (create-render-button *save-end-x1* *save-end-x2* *save-end-y1* *save-end-y2*
+			  "終了" *save-end-x1* *save-end-y1* :font *font40*)))
 
 
 ;;セーブ画面
@@ -612,7 +640,7 @@
 
 (defun render-load-gamen ()
   (render-background)
-  (render-save-slots))
+  (render-load-slots))
 
 ;;出撃準備画面を表示
 (defun render-battle-preparation ()
@@ -631,6 +659,7 @@
   ;;(render-weapon-change-btn)
   (render-pre-battle-explain)
   (render-save-button)
+  (render-load-button)
   (render-ready-btn))
 
 ;;バトル画面を表示
