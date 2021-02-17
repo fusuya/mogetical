@@ -553,7 +553,8 @@
 	      (>= *continue-y2* y *continue-y1*))
 	 (sound-play *select-wav*)
 	 (load-data)
-	 (setf (state *p*) :load))
+	 (setf (state *p*) :load
+	       (prestate *p*) :title))
 	((and (>= *title-end-x2* x *title-end-x1*)
 	      (>= *title-end-y2* y *title-end-y1*))
 	 (sound-play *select-wav*)
@@ -673,7 +674,7 @@
       ((and left
 	    (>= *save-end-x2* x *save-end-x1*)
 	    (>= *save-end-y2* y *save-end-y1*))
-       (setf (state *p*) :title)))))
+       (setf (state *p*) (prestate *p*))))))
 
 
 ;;出撃準備画面 マウスアクション
@@ -694,6 +695,7 @@
 	    (>= *save-x2* x *save-x1*)
 	    (>= *save-y2* y *save-y1*))
        (sound-play *select-wav*)
+       (load-data)
        (setf (prestate *P*) :battle-preparation
 	     (state *p*) :save
 	     selected nil))

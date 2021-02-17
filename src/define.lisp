@@ -46,6 +46,9 @@
 (defparameter *load-game-data1* nil)
 (defparameter *load-game-data2* nil)
 (defparameter *load-game-data3* nil)
+(defparameter *save1-day* nil)
+(defparameter *save2-day* nil)
+(defparameter *save3-day* nil)
 
 (defun load-images ()
   (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap

@@ -603,17 +603,20 @@
 
 
 (defun render-save-slots ()
-  (create-render-button *save-slot1-x1* *save-slot1-x2* *save-slot1-y1* *save-slot1-y2*
-			(format nil "slot1 ~a" *save1-day*)
-			(+ *save-slot1-x1* 20) *save-slot1-y1* :font *font40*)
-  (create-render-button *save-slot2-x1* *save-slot2-x2* *save-slot2-y1* *save-slot2-y2*
-			(format nil "slot1 ~a" *save2-day*)
-			(+ *save-slot2-x1* 20) *save-slot2-y1* :font *font40*)
-  (create-render-button *save-slot3-x1* *save-slot3-x2* *save-slot3-y1* *save-slot3-y2*
-			(format nil "slot1 ~a" *save3-day*)
-			(+ *save-slot3-x1* 20) *save-slot3-y1* :font *font40*)
-  (create-render-button *save-end-x1* *save-end-x2* *save-end-y1* *save-end-y2*
-			"終了" *save-end-x1* *save-end-y1* :font *font40*))
+  (let ((str1 (or *save1-day* (car *load-game-data1*) "なし"))
+	(str2 (or *save2-day* (car *load-game-data2*) "なし"))
+	(str3 (or *save3-day* (car *load-game-data3*) "なし")))
+    (create-render-button *save-slot1-x1* *save-slot1-x2* *save-slot1-y1* *save-slot1-y2*
+			  (format nil "slot1 ~a" str1)
+			  (+ *save-slot1-x1* 20) *save-slot1-y1* :font *font40*)
+    (create-render-button *save-slot2-x1* *save-slot2-x2* *save-slot2-y1* *save-slot2-y2*
+			  (format nil "slot1 ~a" str2)
+			  (+ *save-slot2-x1* 20) *save-slot2-y1* :font *font40*)
+    (create-render-button *save-slot3-x1* *save-slot3-x2* *save-slot3-y1* *save-slot3-y2*
+			  (format nil "slot1 ~a" str3)
+			  (+ *save-slot3-x1* 20) *save-slot3-y1* :font *font40*)
+    (create-render-button *save-end-x1* *save-end-x2* *save-end-y1* *save-end-y2*
+			  "終了" *save-end-x1* *save-end-y1* :font *font40*)))
 
 
 (defun render-load-slots ()
