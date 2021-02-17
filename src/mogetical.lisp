@@ -68,7 +68,7 @@
 (defun set-next-stage ()
   (setf (save *p*) nil)
   (incf (stage *donjon*))
-  (if (= (stage *donjon*) 30) ;;30界でｵﾜﾘ
+  (if (= (stage *donjon*) 101) ;;100界でｵﾜﾘ
       (setf (endtime *p*) (get-internal-real-time)
 	    (state *p*) :ending)
       (progn (adjust-appear-enemy)
