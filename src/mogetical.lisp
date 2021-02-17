@@ -673,7 +673,7 @@
       ((and left
 	    (>= *save-end-x2* x *save-end-x1*)
 	    (>= *save-end-y2* y *save-end-y1*))
-       (setf (state *p*) :battle-preparation)))))
+       (setf (state *p*) :title)))))
 
 
 ;;出撃準備画面 マウスアクション
