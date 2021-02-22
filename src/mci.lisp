@@ -1,3 +1,5 @@
+(in-package :mogetical)
+
 
 (cffi:defctype mcierror :int)
 (cffi:defcfun "mciSendStringA" mcierror 

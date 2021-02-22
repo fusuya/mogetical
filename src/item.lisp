@@ -1,3 +1,4 @@
+(in-package :mogetical)
 ;;武器 heal:傷薬
 (my-enum +w_wood_sword+ +w_knife+ +w_dagger+ +w_silver_knife+ +w_iron_sword +w_Ancient_sword+
 	 +w_coral_sword+ +w_broad_sword+  +w_silver_sword+ +w_Mithril_knife+ +w_flame_sword+ +w_ice_sword+

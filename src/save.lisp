@@ -1,5 +1,5 @@
 ;;ドンジョンのデータも
-
+(in-package :mogetical)
 
 
 (defun youbi (day)
@@ -40,8 +40,8 @@
 
 ;;セーブする
 (defun save-suru (slot)
-  (let* ((path "../save/save")
-	 (str (concatenate 'string path (write-to-string slot))))
+  (let* ((str (concatenate 'string "save" (write-to-string slot)))
+	 (pathstr (namestring (merge-pathnames str *save-root*))))
     (multiple-value-bind (sec min hr day mon year dow daylight-p zone)
 	(decode-universal-time (get-universal-time ))
       (declare (ignore daylight-p zone))
@@ -51,10 +51,10 @@
 	  (1 (setf *save1-day* saveday))
 	  (2 (setf *save2-day* saveday))
 	  (3 (setf *save3-day* saveday)))
-      (with-open-file (out str :direction :output
+      (with-open-file (out pathstr :direction :output
 			   :if-exists :supersede)
 	
-	(format out "(in-package moge)~%")
+	(format out "(in-package mogetical)~%")
 	(format out "(setf *load-game-data~d* '~s)~%" slot (list saveday (save-player-data) (save-donjon-data))))))))
 
 ;;ダンジョンーデータをロードしてセット
@@ -133,10 +133,9 @@
 
 ;;データロードしておく
 (defun load-data ()
-  (let* ((path "../save/")
-	 (files (map 'list #'pathname-name  (directory "../save/*"))))
+  (let* ((files (map 'list #'pathname-name  (directory (namestring (merge-pathnames "*" *save-root*))))))
     (loop :for name :in '("save1" "save2" "save3")
        :do (when (find name files :test #'equal)
-	     (let ((filepath (concatenate 'string path name)))
+	     (let ((filepath (namestring (merge-pathnames name *save-root*))))
 	       (load filepath))))))
 	     

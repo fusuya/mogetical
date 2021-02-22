@@ -1,3 +1,6 @@
+(in-package :mogetical)
+
+
 ;;0 +yuka+ 1+wall+ 2+block+ 3+forest+ 4+mtlow+ 5+mthigh+ 6+water+ 7+fort+ 8+kaidan+ +cursor+)
 (defparameter *stage1*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)

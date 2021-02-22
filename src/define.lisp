@@ -1,3 +1,5 @@
+(in-package :mogetical)
+
 
 (defmacro my-enum (&rest names)
   `(progn
@@ -29,10 +31,7 @@
 (defparameter *atk-width* 8)
 (defparameter *atk-pos-max* (* *atk-width* 3))
 
-(defparameter *p-img* nil)
-(defparameter *p-atk-img* nil)
-(defparameter *buki-img* nil)
-(defparameter *hammer-img* nil)
+
 (defparameter *job-monsters* nil)
 (defparameter *objs-img* nil)
 (defparameter *arrow-img* nil)
@@ -50,32 +49,35 @@
 (defparameter *save2-day* nil)
 (defparameter *save3-day* nil)
 
+
+(defparameter *data-root* (asdf:system-source-directory 'mogetical))
+(defparameter *img-root* (merge-pathnames "img/" *data-root*))
+(defparameter *sound-root* (merge-pathnames "sound/" *data-root*))
+(defparameter *save-root* (merge-pathnames "save/" *data-root*))
+
+
+
 (defun load-images ()
-  (setf *objs-img* (load-image "../img/new-objs-img.bmp" :type :bitmap
+  (setf *objs-img* (load-image (namestring (merge-pathnames "new-objs-img.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*job-img*  (load-image "../img/class.bmp" :type :bitmap
-			                         :flags '(:load-from-file :create-dib-section))
-      	*arrow-img* (load-image "../img/arrow.bmp" :type :bitmap
-      			     :flags '(:load-from-file :create-dib-section))
-      	*p-img* (load-image "../img/p-ido-anime.bmp" :type :bitmap
-      			     :flags '(:load-from-file :create-dib-section))
-      	*p-atk-img* (load-image "../img/p-atk-anime.bmp" :type :bitmap
-      			     :flags '(:load-from-file :create-dib-section))
-      	*hammer-img* (load-image "../img/hammer-anime.bmp" :type :bitmap
-      			     :flags '(:load-from-file :create-dib-section))
-      	*job-monsters* (load-image "../img/job-monsters.bmp" :type :bitmap
-      					 :flags '(:load-from-file :create-dib-section))
-      	*buki-img* (load-image "../img/buki-anime.bmp" :type :bitmap
+	*job-img* (load-image (namestring (merge-pathnames "class.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*job-img* (load-image "../img/job-img.bmp" :type :bitmap
+	*job-monsters* (load-image (namestring (merge-pathnames "job-monsters.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku-img* (load-image "../img/waku.bmp" :type :bitmap
+	*waku-img* (load-image (namestring (merge-pathnames "waku.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku-ao* (load-image "../img/aowaku.bmp" :type :bitmap
-			      :flags '(:load-from-file :create-dib-section))
-	*waku-aka* (load-image "../img/akawaku.bmp" :type :bitmap
+	*waku-ao* (load-image (namestring (merge-pathnames "aowaku.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))
-	*waku2-img* (load-image "../img/hoge.bmp" :type :bitmap
+	*waku-aka* (load-image (namestring (merge-pathnames "akawaku.bmp" *img-root*))
+			       :type :bitmap
+			       :flags '(:load-from-file :create-dib-section))
+	*waku2-img* (load-image (namestring (merge-pathnames "hoge.bmp" *img-root*))
+			       :type :bitmap
 			       :flags '(:load-from-file :create-dib-section))))
 
 ;;プレイヤー画像切り替えよう
@@ -117,46 +119,37 @@
 
 (defparameter *backup-player-data* nil)
 (defparameter *backup-donjon-data* nil)
-;;(defparameter *tate* 11) ;;マップサイズ
-;;(defparameter *yoko* 11)
-(defparameter *monsters* nil)
-(defparameter *monster-builders* nil)
+
 
 (defparameter *map* nil)
-(defparameter *ido?* nil)
 (defparameter *p* nil)
-(defparameter *pt* nil)
 
-(defparameter *battle?* nil)
-(defparameter *monster-num* 10)
-(defparameter *monster-level* 1) ;;階数によるモンスターのレベル
-(defparameter *boss?* 0)
 (defparameter *end* 0)
 (defparameter *lv-exp* 100)
 (defparameter *images* nil)
 (defparameter *anime-monsters-img* nil)
 
-(defparameter *knuckle-wav*    "../sound/knuckle90.wav")
-(defparameter *ax-wav*         "../sound/ax90.wav")
-(defparameter *sword-wav*      "../sound/sword90.wav")
-(defparameter *spear-wav*      "../sound/spear90.wav")
-(defparameter *bow-wav*        "../sound/bow90.wav")
-(defparameter *wand-wav*       "../sound/wand90.wav")
-(defparameter *heal-wav*       "../sound/heal90.wav")
-(defparameter *chest-wav*      "../sound/chest90.wav")
-(defparameter *move-wav*       "../sound/move90.wav")
-(defparameter *lvup-wav*       "../sound/lvup90.wav")
-(defparameter *mouse-move-wav* "../sound/mouse-select90.wav")
-(defparameter *select-wav*     "../sound/select90.wav")
+(defparameter *knuckle-wav*    (namestring (merge-pathnames "knuckle90.wav"      *sound-root*)))
+(defparameter *ax-wav*         (namestring (merge-pathnames "ax90.wav"           *sound-root*)))
+(defparameter *sword-wav*      (namestring (merge-pathnames "sword90.wav"        *sound-root*)))
+(defparameter *spear-wav*      (namestring (merge-pathnames "spear90.wav"        *sound-root*)))
+(defparameter *bow-wav*        (namestring (merge-pathnames "bow90.wav"          *sound-root*)))
+(defparameter *wand-wav*       (namestring (merge-pathnames "wand90.wav"         *sound-root*)))
+(defparameter *heal-wav*       (namestring (merge-pathnames "heal90.wav"         *sound-root*)))
+(defparameter *chest-wav*      (namestring (merge-pathnames "chest90.wav"        *sound-root*)))
+(defparameter *move-wav*       (namestring (merge-pathnames "move90.wav"         *sound-root*)))
+(defparameter *lvup-wav*       (namestring (merge-pathnames "lvup90.wav"         *sound-root*)))
+(defparameter *mouse-move-wav* (namestring (merge-pathnames "mouse-select90.wav" *sound-root*)))
+(defparameter *select-wav*     (namestring (merge-pathnames "select90.wav"       *sound-root*)))
 ;;bgm
-(defparameter *title-bgm-path*      "../sound/titleBGM.wav")
-(defparameter *edit-bgm-path*       "../sound/editBGM.wav")
-(defparameter *prebattle-bgm-path*  "../sound/prebattle.wav")
-(defparameter *battle1-bgm-path*    "../sound/battle1.wav")
-(defparameter *battle2-bgm-path*    "../sound/battle2.wav")
-(defparameter *battle3-bgm-path*    "../sound/battle3.wav")
-(defparameter *battle4-bgm-path*    "../sound/battle4.wav")
-(defparameter *battle5-bgm-path*    "../sound/battle5.wav")
+(defparameter *title-bgm-path*      (namestring (merge-pathnames "titleBGM.wav"  *sound-root*)))
+(defparameter *edit-bgm-path*       (namestring (merge-pathnames "editBGM.wav"   *sound-root*)))
+(defparameter *prebattle-bgm-path*  (namestring (merge-pathnames "prebattle.wav" *sound-root*)))
+(defparameter *battle1-bgm-path*    (namestring (merge-pathnames "battle1.wav"   *sound-root*)))
+(defparameter *battle2-bgm-path*    (namestring (merge-pathnames "battle2.wav"   *sound-root*)))
+(defparameter *battle3-bgm-path*    (namestring (merge-pathnames "battle3.wav"   *sound-root*)))
+(defparameter *battle4-bgm-path*    (namestring (merge-pathnames "battle4.wav"   *sound-root*)))
+(defparameter *battle5-bgm-path*    (namestring (merge-pathnames "battle5.wav"   *sound-root*)))  
 
 ;;alias
 (defparameter *titlebgm*      "title")
@@ -180,29 +173,12 @@
 (defparameter *obj-h* 32)
 
 
-;;元のブロック画像のサイズ
-(defparameter *blo-w* 32)
-(defparameter *blo-h* 32)
-;;表示するブロック画像のサイズ
-(defparameter *blo-w46* 42)
-(defparameter *blo-h46* 42)
-
-;;炎サイズ
-(defparameter *fire-w* 32)
-(defparameter *fire-h* 32)
-(defparameter *fire-w/2* (floor *fire-w* 2))
-(defparameter *fire-h/2* (floor *fire-h* 2))
 
 ;;プレイヤーのサイズ
 (defparameter *p-w* 24)
 (defparameter *p-h* 32)
-(defparameter *p-w/2* (floor *p-w* 2))
-(defparameter *p-h/2* (floor *p-h* 2))
 
 
-
-(defparameter *w/2* (floor *obj-w* 2))
-(defparameter *h/2* (floor *obj-h* 2))
 
 ;;オブジェクト画像表示サイズ
 (defparameter *w-test* 36)
@@ -251,14 +227,9 @@
 (defparameter *hogememDC* nil)
 (defparameter *hogebitmap* nil)
 
-(defparameter *kabe-break* nil)
 (defparameter *HPbar-max* 40)
 (defparameter *bukiexpbar-max* 100)
 
-(defparameter *droppos* '((0 0) (0 1) (0 -1) (1 0) (-1 0) (1 1) (-1 -1) (-1 1) (1 -1)))
-(defparameter *around* '((0 1) (0 -1) (1 0) (-1 0) (1 1) (-1 -1) (-1 1) (1 -1)))
-(defparameter *tonari* '((0 1) (0 -1) (1 0) (-1 0)))
-(defparameter *tonari-dir* '(:right :left :down :up))
 
 (defparameter *mouse-hosei-x* 1)
 (defparameter *mouse-hosei-y* 1)

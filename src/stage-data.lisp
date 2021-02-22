@@ -1,3 +1,4 @@
+(in-package :mogetical)
 
 (defparameter *appear-enemy-rate-list*
   '((:slime . 100) (:orc . 90) (:brigand . 80) (:hydra . 70) (:goron . 60)

@@ -1,3 +1,5 @@
+(in-package :mogetical)
+
 ;;時間変換
 (defun get-hms (n)
   (multiple-value-bind (h m1) (floor n 3600000)

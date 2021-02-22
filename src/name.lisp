@@ -1,3 +1,5 @@
+(in-package :mogetical)
+
 (defparameter *name-list*
   (list "タツオカ" "コシャ" "オギ" "ヤマテ" "カワキタ" "ナカンダカリ"
 	"ジョウ" "サクヤマ" "ホリゴメ" "イナクマ" "ジョウモト" "マブチ"

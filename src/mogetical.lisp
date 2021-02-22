@@ -1,5 +1,5 @@
 ;;TODO 武器と防具のリスト分けるか
-
+(in-package :mogetical)
 
 
 (defun delete-font ()
@@ -19,18 +19,13 @@
   (delete-object-array *brush*))
 
 (defun delete-images ()
-  (delete-object *p-img*)
   (delete-object *objs-img*)
-  (delete-object *p-atk-img*)
-  (delete-object *hammer-img*)
   (delete-object *job-monsters*)
-  (delete-object *arrow-img*)
   (delete-object *waku-img*)
   (delete-object *waku2-img*)
   (delete-object *waku-aka*)
   (delete-object *waku-ao*)
-  (delete-object *job-img*)
-  (delete-object *buki-img*))
+  (delete-object *job-img*))
 
 
 
@@ -204,7 +199,6 @@
 						(* (length (name new-item)) 10))
 				       :posy (posy unit)
 				       :maxy (- (posy unit) 20)))
-    
     (push new-item (item *p*))))
     
 
@@ -215,11 +209,9 @@
       ;;回復
       ((eq (atktype buki) :heal)
        (+ (int atker) (random (damage buki))))
-      ;;ブロック
-      ((< (random 100) (blk (armor defender)))
-       0)
-      ;;地形回避
-      ((< (random 100) (get-cell-data (cell defender) :avoid))
+      ;;ブロック or 地形回避
+      ((or (< (random 100) (blk (armor defender)))
+	   (< (random 100) (get-cell-data (cell defender) :avoid)))
        0)
       (t
        (let* ((atkhosei (if (eq (categoly buki) :wand) int str))
@@ -243,7 +235,7 @@
   (if (eq (atktype (buki atker)) :heal)
       (incf (expe atker) (+ (dmg-num (dmg defender)) (level defender)))
       (incf (expe atker) (expe defender)))
-  (loop while (>= (expe atker) (lvup-exp atker))
+  (loop :while (>= (expe atker) (lvup-exp atker))
      do
        (sound-play *lvup-wav*)
        (status-up atker)
@@ -330,10 +322,10 @@
 ;;攻撃移動更新
 (defun update-atk-img (p i)
   (case (dir p)
-    (:right(setf (posx p) (update-atk-img-pos  (posx p) i)))
-    (:left (setf (posx p) (- (update-atk-img-pos (- (posx p)) i))))
-    (:down (setf (posy p) (update-atk-img-pos (posy p) i )))
-    (:up   (setf (posy p) (- (update-atk-img-pos (- (posy p)) i))))))
+    (:right (setf (posx p) (update-atk-img-pos  (posx p) i)))
+    (:left  (setf (posx p) (- (update-atk-img-pos (- (posx p)) i))))
+    (:down  (setf (posy p) (update-atk-img-pos (posy p) i )))
+    (:up    (setf (posy p) (- (update-atk-img-pos (- (posy p)) i))))))
 
 ;;攻撃効果音
 (defun play-atk-sound (unit)
