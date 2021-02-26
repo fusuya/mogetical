@@ -15,12 +15,14 @@
 
 ;;絵画進むごとに敵が強い武器装備する確率を上げる
 (defun adjust-enemy-equip-rate ()
-  (setf *warrior-weapon*  (rate-decf *warrior-weapon*)
-	*sorcerar-weapon* (rate-decf *sorcerar-weapon*)
-	*priest-weapon*   (rate-decf *priest-weapon*)
-	*thief-weapon*    (rate-decf *thief-weapon*)
-	*archer-weapon*   (rate-decf *archer-weapon*)
-	*knight-weapon*   (rate-decf *knight-weapon*)))
+  (with-slots (warrior-weapon sorcerer-weapon priest-weapon archer-weapon
+			      thief-weapon knight-weapon) *donjon*
+  (setf warrior-weapon  (rate-decf warrior-weapon)
+	sorcerer-weapon (rate-decf sorcerer-weapon)
+	priest-weapon   (rate-decf priest-weapon)
+	thief-weapon    (rate-decf thief-weapon)
+	archer-weapon   (rate-decf archer-weapon)
+	knight-weapon   (rate-decf knight-weapon))))
 
 
 (defun adjust-appear-enemy ()
@@ -39,21 +41,23 @@
 
 ;;敵生成時に装備してる武器
 (defun enemy-equip-weapon (e-type job)
-  (case e-type
-    ((:slime :orc :brigand :hydra :dragon :yote1 :goron)
-     (job-init-weapon job))
-    (:warrior
-     (item-make  (weightpick *warrior-weapon*)))
-    (:sorcerer
-     (item-make  (weightpick *sorcerar-weapon*)))
-    (:priest
-     (item-make  (weightpick *priest-weapon*)))
-    (:thief
-     (item-make  (weightpick *thief-weapon*)))
-    (:archer
-     (item-make  (weightpick *archer-weapon*)))
-    ((:knight :pknight)
-     (item-make  (weightpick *knight-weapon*)))))
+  (with-slots (warrior-weapon sorcerer-weapon priest-weapon archer-weapon
+			      thief-weapon knight-weapon) *donjon*
+    (case e-type
+      ((:slime :orc :brigand :hydra :dragon :yote1 :goron)
+       (job-init-weapon job))
+      (:warrior
+       (item-make  (weightpick warrior-weapon)))
+      (:sorcerer
+       (item-make  (weightpick sorcerer-weapon)))
+      (:priest
+       (item-make  (weightpick priest-weapon)))
+      (:thief
+       (item-make  (weightpick thief-weapon)))
+      (:archer
+       (item-make  (weightpick archer-weapon)))
+      ((:knight :pknight)
+       (item-make  (weightpick knight-weapon))))))
 
 ;;敵生成時に装備する防具
 (defun enemy-equip-armor ()
@@ -80,7 +84,7 @@
 
 (defun create-enemy (e-type e-pos hp str def int res agi expe job)
   (let* ((level (set-enemy-level))
-	 (e (make-instance 'unit :posx (* (car e-pos) *obj-w*)
+	 (e (make-instance 'e-unit :posx (* (car e-pos) *obj-w*)
 			  :name (nth (random (length *name-list*)) *name-list*) 
 			  :posy (* (cadr e-pos) *obj-h*) :level level
 			  :x (car e-pos) :y (cadr e-pos)
@@ -88,8 +92,8 @@
 			  :armor (enemy-equip-armor)
 			  :moto-w *obj-w* :moto-h *obj-h*
 			  :str str :vit def :hp hp :maxhp hp :int int :res res
-			  :expe (+ expe level) :agi agi
-			  :w *obj-w* :h *obj-h*
+			  :expe (+ expe level) :agi agi :state :wait
+			  :w *obj-w* :h *obj-h* :sight (+ 3 (random 3))
 			  :w/2 (floor *obj-w* 2) :h/2 (floor *obj-h* 2)
 			  :obj-type e-type :img-h job
 			  :team :enemy :job job

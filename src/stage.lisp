@@ -22,7 +22,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 11)
 	:kaidan-init-pos '(:xmin 1 :xmax 13 :ymin 1 :ymax 6)
 	:player-init-pos '(:xmin 6 :xmax 8  :ymin 12 :ymax 13)
-	:enemy-init-pos  '(:xmin 5 :xmax 9  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 4 :xmax 10  :ymin 1 :ymax 6)))
 
 (defparameter *stage2*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -44,7 +44,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 10 :ymin 1 :ymax 10)
 	:kaidan-init-pos '(:xmin 1 :xmax 6 :ymin 1 :ymax 6)
 	:player-init-pos '(:xmin 11 :xmax 13  :ymin 11 :ymax 13)
-	:enemy-init-pos  '(:xmin 1 :xmax 4  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 1 :xmax 6  :ymin 1 :ymax 6)))
 
 (defparameter *stage3*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -66,7 +66,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 10)
 	:kaidan-init-pos '(:xmin 3 :xmax 13 :ymin 1 :ymax 6)
 	:player-init-pos '(:xmin 1 :xmax 3  :ymin 11 :ymax 13)
-	:enemy-init-pos  '(:xmin 10 :xmax 13  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 8 :xmax 13  :ymin 1 :ymax 7)))
 
 (defparameter *stage4*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -88,7 +88,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 11)
 	:kaidan-init-pos '(:xmin 1 :xmax 13 :ymin 1 :ymax 6)
 	:player-init-pos '(:xmin 6 :xmax 8  :ymin 12 :ymax 13)
-	:enemy-init-pos  '(:xmin 5 :xmax 9  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 2 :xmax 11  :ymin 1 :ymax 7)))
 
 (defparameter *stage5*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -110,7 +110,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 11 :ymin 1 :ymax 13)
 	:kaidan-init-pos '(:xmin 1 :xmax 6 :ymin 1 :ymax 13)
 	:player-init-pos '(:xmin 12 :xmax 13  :ymin 6 :ymax 8)
-	:enemy-init-pos  '(:xmin 1 :xmax 4  :ymin 5 :ymax 9)))
+	:enemy-init-pos  '(:xmin 1 :xmax 6  :ymin 3 :ymax 11)))
 
 (defparameter *stage6*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -132,7 +132,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 11)
 	:kaidan-init-pos '(:xmin 1 :xmax 13 :ymin 1 :ymax 5)
 	:player-init-pos '(:xmin 6 :xmax 8  :ymin 12 :ymax 13)
-	:enemy-init-pos  '(:xmin 5 :xmax 9  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 3 :xmax 11  :ymin 1 :ymax 7)))
 
 
 (defparameter *stage7*
@@ -177,7 +177,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 10)
 	:kaidan-init-pos '(:xmin 3 :xmax 13 :ymin 1 :ymax 6)
 	:player-init-pos '(:xmin 1 :xmax 3  :ymin 11 :ymax 13)
-	:enemy-init-pos  '(:xmin 10 :xmax 13  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 7 :xmax 13  :ymin 1 :ymax 6)))
 
 (defparameter *stage9*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -199,7 +199,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 11 :ymin 1 :ymax 13)
 	:kaidan-init-pos '(:xmin 1 :xmax 6 :ymin 1 :ymax 13)
 	:player-init-pos '(:xmin 12 :xmax 13  :ymin 6 :ymax 8)
-	:enemy-init-pos  '(:xmin 1 :xmax 4  :ymin 5 :ymax 9)))
+	:enemy-init-pos  '(:xmin 1 :xmax 6  :ymin 5 :ymax 11)))
 
 (defparameter *stage10*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -221,7 +221,7 @@
 	:chest-init-pos  '(:xmin 1 :xmax 13 :ymin 1 :ymax 11)
 	:kaidan-init-pos '(:xmin 1 :xmax 13 :ymin 1 :ymax 5)
 	:player-init-pos '(:xmin 6 :xmax 8  :ymin 12 :ymax 13)
-	:enemy-init-pos  '(:xmin 5 :xmax 9  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 5 :xmax 11  :ymin 1 :ymax 7)))
 
 (defparameter *stage11*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -243,7 +243,7 @@
 	:chest-init-pos  '(:xmin 4 :xmax 13 :ymin 1 :ymax 10)
 	:kaidan-init-pos '(:xmin 11 :xmax 13 :ymin 1 :ymax 13)
 	:player-init-pos '(:xmin 1 :xmax 3  :ymin 11 :ymax 13)
-	:enemy-init-pos  '(:xmin 1 :xmax 4  :ymin 1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 1 :xmax 7  :ymin 1 :ymax 7)))
 
 (defparameter *stage12*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)
@@ -265,7 +265,7 @@
 	:chest-init-pos  '(:xmin  1 :xmax 10  :ymin  1 :ymax 10)
 	:kaidan-init-pos '(:xmin  1 :xmax  3  :ymin  1 :ymax 13)
 	:player-init-pos '(:xmin 11 :xmax 13  :ymin 11 :ymax 13)
-	:enemy-init-pos  '(:xmin 10 :xmax 13  :ymin  1 :ymax 4)))
+	:enemy-init-pos  '(:xmin 10 :xmax 13  :ymin  1 :ymax 7)))
 
 (defparameter *stage13*
   (list :field '((1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)

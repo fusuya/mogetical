@@ -212,9 +212,6 @@
 (defparameter *name* nil)
 (defparameter *donjon* nil)
 
-;;画面領域
-(defparameter *client-w* (+ *map-w* 150))
-(defparameter *client-h* (* *blo-h46* *tate*))
 
 (defparameter *screen-center-x* nil)
 
@@ -429,22 +426,27 @@
   '(:boots :atkup :defup))
 
 (defclass donjon ()
-  ((field :accessor field :initform nil :initarg :field)  ;;マップ
-   (tate :accessor tate :initform *tate* :initarg :tate)  ;;縦幅
-   (yoko :accessor yoko :initform *yoko* :initarg :yoko)  ;;横幅
-   (enemy-init-pos :accessor enemy-init-pos :initform nil :initarg :enemy-init-pos)
-   (player-init-pos :accessor player-init-pos :initform nil :initarg :player-init-pos)
-   (enemies :accessor enemies :initform nil :initarg :enemies)
-   (chest-max :accessor chest-max :initform 0 :initarg :chest-max)
-   (kaidan-init-pos :accessor kaidan-init-pos :initform nil :initarg :kaidan-init-pos)
-   (appear-enemy-rate :accessor appear-enemy-rate  :initform nil  :initarg :appear-enemy-rate) ;;床
-   (donjonnum     :accessor donjonnum      :initform nil  :initarg :donjonnum)
-   (kaidan    :accessor kaidan     :initform nil  :initarg :kaidan) ;;ブロック
-   (chest     :accessor chest    :initform nil  :initarg :chest) ;;宝箱
-   (stage      :accessor stage       :initform 1   :initarg :stage)
-   (chest-init-pos :accessor chest-init-pos  :initform nil  :initarg :chest-init-pos)
-   (drop-item :accessor drop-item  :initform nil :initarg :drop-item)))
-
+  ((field             :accessor field              :initform nil    :initarg :field)  ;;マップ
+   (tate              :accessor tate               :initform *tate* :initarg :tate)  ;;縦幅
+   (yoko              :accessor yoko               :initform *yoko* :initarg :yoko)  ;;横幅
+   (enemy-init-pos    :accessor enemy-init-pos     :initform nil    :initarg :enemy-init-pos)
+   (player-init-pos   :accessor player-init-pos    :initform nil    :initarg :player-init-pos)
+   (enemies           :accessor enemies            :initform nil    :initarg :enemies)
+   (chest-max         :accessor chest-max          :initform 0      :initarg :chest-max)
+   (kaidan-init-pos   :accessor kaidan-init-pos    :initform nil    :initarg :kaidan-init-pos)
+   (appear-enemy-rate :accessor appear-enemy-rate  :initform nil    :initarg :appear-enemy-rate) ;;床
+   (donjonnum         :accessor donjonnum          :initform nil    :initarg :donjonnum)
+   (kaidan            :accessor kaidan             :initform nil    :initarg :kaidan) ;;ブロック
+   (chest             :accessor chest              :initform nil    :initarg :chest) ;;宝箱
+   (stage             :accessor stage              :initform 1      :initarg :stage)
+   (chest-init-pos    :accessor chest-init-pos     :initform nil    :initarg :chest-init-pos)
+   (drop-item         :accessor drop-item          :initform nil    :initarg :drop-item)
+   (warrior-weapon    :accessor warrior-weapon     :initform nil    :initarg :warrior-weapon)
+   (sorcerer-weapon   :accessor sorcerer-weapon    :initform nil    :initarg :sorcerer-weapon)
+   (thief-weapon      :accessor thief-weapon       :initform nil    :initarg :thief-weapon)
+   (knight-weapon     :accessor knight-weapon      :initform nil    :initarg :knight-weapon)
+   (priest-weapon     :accessor priest-weapon      :initform nil    :initarg :priest-weapon)
+   (archer-weapon     :accessor archer-weapon      :initform nil    :initarg :archer-weapon)))
 ;;ブロックとか
 (defclass obj ()
   ((x        :accessor x        :initform 0      :initarg :x)
@@ -534,6 +536,10 @@
    (canatkenemy :accessor canatkenemy :initform nil   :initarg :canatkenemy)
    (atkedarea   :accessor atkedarea   :initform nil :initarg :atkedarea)
    ))
+
+(defclass e-unit (unit)
+  ((sight       :accessor sight       :initform 0   :initarg :sight)
+   (wakeup      :accessor wakeup      :initform nil :initarg :wakeup)))
 
 (defclass player ()
   ((party           :accessor party       :initform nil    :initarg :party)

@@ -35,8 +35,12 @@
   (list (save-units-data (party *p*)) (save-party-item-data)))
 
 (defun save-donjon-data ()
-  (with-slots (donjonnum stage enemies drop-item chest kaidan) *donjon*
-    (list donjonnum stage (save-units-data enemies) drop-item (save-obj-data chest) kaidan)))
+  (with-slots (donjonnum stage enemies drop-item chest kaidan
+			 warrior-weapon sorcerer-weapon priest-weapon archer-weapon
+			 thief-weapon knight-weapon) *donjon*
+    (list donjonnum stage (save-units-data enemies) drop-item (save-obj-data chest) kaidan
+	  warrior-weapon sorcerer-weapon priest-weapon archer-weapon
+			      thief-weapon knight-weapon)))
 
 ;;セーブする
 (defun save-suru (slot)
@@ -59,7 +63,9 @@
 
 ;;ダンジョンーデータをロードしてセット
 (defun load-donjon-data (data)
-  (destructuring-bind (donjonnum stage enemies drop-item chest kaidan) data
+  (destructuring-bind (donjonnum stage enemies drop-item chest kaidan
+				 warrior-weapon sorcerer-weapon priest-weapon archer-weapon
+				 thief-weapon knight-weapon) data
     (let* ((donjon (copy-tree (nth donjonnum *stage-list*))))
       (setf (field *donjon*) (make-array (list 15 15) :initial-contents (getf donjon :field))
 	    (player-init-pos *donjon*) (getf donjon :player-init-pos)
@@ -83,6 +89,12 @@
 					   :team :enemy))))
 	    (drop-item *donjon*) drop-item
 	    (aref (field *donjon*) (cadr kaidan) (car kaidan)) +kaidan+
+	    (warrior-weapon *donjon*) warrior-weapon
+	    (sorcerer-weapon *donjon*) sorcerer-weapon
+	    (thief-weapon *donjon*) thief-weapon
+	    (archer-weapon *donjon*) archer-weapon
+	    (priest-weapon *donjon*) priest-weapon
+	    (knight-weapon *donjon*) knight-weapon
 	    (stage *donjon*) stage
 	    (chest *donjon*)
 	    (loop :for c :in chest

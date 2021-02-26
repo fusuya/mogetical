@@ -44,14 +44,21 @@
 
 ;;ゲーム初期化
 (defun init-game ()
+  (init-weapon-list)
   (setf *p* (make-instance 'player :item nil :state :title :starttime (get-internal-real-time)) ;;*test-buki-item*)
 	*backup-player-data* (make-instance 'player)
 	*mouse* (make-instance 'mouse)
 	*bgm* *titlebgm*
         *donjon* (make-instance 'donjon :drop-item  (create-drop-item-list (list *sword-list* *spear-list* *ax-list* *rod-list* *staff-list* *bow-list* *clothes-list* *shield-list*))
+				:warrior-weapon (copy-tree *warrior-weapon*)
+				:sorcerer-weapon (copy-tree *sorcerar-weapon*)
+				:priest-weapon (copy-tree *priest-weapon*)
+				:thief-weapon  (copy-tree *thief-weapon*)
+				:archer-weapon (copy-tree *archer-weapon*)
+				:knight-weapon (copy-tree *knight-weapon*)
 				:appear-enemy-rate (copy-tree *appear-enemy-rate-list*)
 				:stage 1));;(car *stage-list*)) ;;(nth (length *stage-list*) *stage-list*))
-  (init-weapon-list)
+  
   (init-bgm)
   (create-stage)
   ;;(set-test-item-list)
@@ -910,10 +917,14 @@
 
 
 ;;ユニットの状態を行動可にする
-(defun init-action (units)
-  (loop :for u :in units
-     :unless (eq (state u) :dead)
-     :do (setf (state u) :action)))
+(defmethod init-action ((unit unit))
+  (unless (eq (state unit) :dead)
+    (setf (state unit) :action)))
+
+(defmethod init-action ((unit e-unit))
+  (unless (or (eq (state unit) :dead)
+	      (eq (state unit) :wait))
+    (setf (state unit) :action)))
 
 
 
@@ -948,8 +959,9 @@
 	 (clear-selected-unit selected)
 	 (setf selected nil))
        (turn-end-heal (party *p*))
-       (setf (turn *p*) :enemy)
-       (init-action (party *p*)))
+       (setf (turn *p*) :enemy)3
+       (loop :for p :in (party *p*)
+	    :do (init-action p)))
       ((and right ;;選択してるキャラ解除
 	    selected)
        (clear-selected-unit selected)
@@ -1094,10 +1106,20 @@
        (near-chara atker (field *donjon*) (party *p*) #'(lambda (x)
 							  (unit-dist atker x)) #'<)))))
 
+;;敵の視界内にプレイヤーキャラがいるかチェック
+(defun enemy-sight-check (unit)
+  (with-slots (x y sight) unit
+    (when (find-if #'(lambda (p) (and (>= (+ x sight) (x p) (- x sight))
+				      (>= (+ y sight) (y p) (- y sight))))
+		   (party *p*))
+      (setf (state unit) :action))))
+
 
 ;;敵の行動 攻撃範囲に相手ユニットがいたら攻撃する
 (defun enemy-act (hwnd)
   (loop :for u :in (enemies *donjon*)
+     :when (eq (state u) :wait)
+     :do (enemy-sight-check u)
      :when (eq (state u) :action)
      :do
        (let* ((r-min (rangemin (buki u)))
@@ -1130,8 +1152,8 @@
   (enemy-act hwnd)
   (turn-end-heal (enemies *donjon*))
   (setf (turn *p*) :ally)
-  (init-action (enemies *donjon*))
-  (init-action (party *p*)))
+  (mapc #'init-action (enemies *donjon*))
+  (mapc #'init-action (party *p*)))
   
 
 ;;ゲットしたアイテムのテキスト動かす
@@ -1247,15 +1269,6 @@
 	  *mouse-hosei-y* (/ *change-screen-h*  (rect-bottom *c-rect*)))))
 
 
-;;クライアント領域を*client-w* *client-h*に設定
-(defun set-client-size (hwnd)
-  (let* ((rc (get-client-rect hwnd))
-         (rw (get-window-rect hwnd))
-         (new-w (+ *client-w* (- (- (rect-right rw) (rect-left rw))
-                               (- (rect-right rc) (rect-left rc)))))
-         (new-h (+ *client-h* (- (- (rect-bottom rw) (rect-top rw))
-                               (- (rect-bottom rc) (rect-top rc))))))
-    (set-window-pos hwnd nil 0 0 new-w new-h '(:no-move :no-zorder))))
 
 ;;proc
 (defwndproc moge-wndproc (hwnd msg wparam lparam)
@@ -1269,7 +1282,6 @@
      (set-font)
      (load-images)
      (init-game)
-     ;;(set-client-size hwnd)
      (setf *c-rect* (get-client-rect hwnd))
      ;;(setf *screen-w* (rect-right *c-rect*)
 	;;   *screen-h* (rect-bottom *c-rect*))

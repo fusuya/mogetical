@@ -110,25 +110,6 @@
     (:left +left+)
     (:right +right+)))
 
-;;攻撃時の描画
-(defun render-p-atk (atk-img)
-  (with-slots (buki) *p*
-    (let ((dir (p-dir-num)))
-      (cond
-	((eq dir +down+)
-	 (select-object *hogememdc* *p-atk-img*)
-	 (new-trans-blt (x *p*) (y *p*) (* *p-w* (img *p*)) (* *p-h* dir)
-			(moto-w *p*) (moto-h *p*) (w *p*) (h *p*))
-	 (select-object *hogememdc* atk-img)
-	 (new-trans-blt (x buki) (y buki) (* *p-w* (img *p*)) (* *p-h* dir)
-			(moto-w buki) (moto-h buki) (w buki) (h buki)))
-	(t
-	 (select-object *hogememdc* atk-img)
-	 (new-trans-blt (x buki) (y buki) (* *p-w* (img *p*)) (* *p-h* dir)
-			(moto-w buki) (moto-h buki) (w buki) (h buki))
-	 (select-object *hogememdc* *p-atk-img*)
-	 (new-trans-blt (x *p*) (y *p*) (* *p-w* (img *p*)) (* *p-h* dir)
-			(moto-w *p*) (moto-h *p*) (w *p*) (h *p*)))))))
 
 
 
