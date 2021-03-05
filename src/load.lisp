@@ -8,9 +8,9 @@
 
 
 (loop :for file :in '("define.lisp" "name.lisp" "item.lisp"  "save.lisp" "mci.lisp"
-		       "stage.lisp" "stage-data.lisp"
-		      "astar.lisp" "render.lisp" "mogetical.lisp")
-     :do (load file :external-format :utf-8))
+                      "stage.lisp" "stage-data.lisp"
+                      "astar.lisp" "render.lisp" "mogetical.lisp")
+      :do (load file :external-format :utf-8))
 
 ;; (load "define.lisp" :external-format :utf-8)
 ;; (load "name.lisp" :external-format :utf-8)
