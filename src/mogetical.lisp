@@ -1,7 +1,6 @@
 ;;TODO 武器と防具のリスト分けるか
 (in-package :mogetical)
 
-
 (defun delete-font ()
   (delete-object *font140*)
   (delete-object *font90*)
@@ -84,13 +83,13 @@
 (defun save-temp-player-data (moto saki)
   (with-slots (party cursor item bgm item-page getitem turn prestate state) moto
     (setf (party saki) (loop :for p :in party
-			  :collect (shallow-copy-object p))
-	  (item saki) (loop :for i :in item
-			 :collect (shallow-copy-object i))
-	  (item-page saki) 0
-	  (turn saki) :ally
-	  (prestate saki) prestate
-	  (state saki) state)))
+                             :collect (shallow-copy-object p))
+          (item saki) (loop :for i :in item
+                            :collect (shallow-copy-object i))
+          (item-page saki) 0
+          (turn saki) :ally
+          (prestate saki) prestate
+          (state saki) state)))
 
 
 
@@ -106,16 +105,16 @@
     (let ((key (virtual-code-key wparam)))
       (case key
         (:left (setf left t))
-	(:shift (setf shift t))
+	      (:shift (setf shift t))
         (:right (setf right t))
         (:down (setf down t))
         (:up (setf up t))
         (:return (setf enter t))
         (:keyz (setf z t))
         (:keyx (setf x t))
-	(:keyc (setf c t))
-	(:keyq ;; quit
-	 (send-message hwnd (const +wm-close+) nil nil))))))
+        (:keyc (setf c t))
+        (:keyq ;; quit
+          (send-message hwnd (const +wm-close+) nil nil))))))
 
 ;;キー話したとき
 (defun moge-keyup (wparam)
@@ -123,13 +122,13 @@
     (let ((key (virtual-code-key wparam)))
       (case key
         (:left (setf left nil))
-	(:shift (setf shift nil))
+        (:shift (setf shift nil))
         (:right (setf right nil))
         (:down (setf down nil))
         (:up (setf up nil))
         (:return (setf enter nil))
         (:keyx (setf x nil))
-	(:keyc (setf c nil))
+	      (:keyc (setf c nil))
         (:keyz (setf z nil))))))
 
 
@@ -144,15 +143,15 @@
 (defun rand+- (n)
   (let ((a (1+ (random n))))
     (if (= (random 2) 1)
-	a
-	(- a))))
+	      a
+	      (- a))))
 
 ;;'(:up :down :right :left)
 (defun rand-dir (lst new-lst)
   (if (null lst)
       new-lst
       (let ((hoge (nth (random (length lst)) lst)))
-	(rand-dir (remove hoge lst) (cons hoge new-lst)))))
+        (rand-dir (remove hoge lst) (cons hoge new-lst)))))
 
 
 
@@ -192,21 +191,44 @@
      (abs (- (y unit1) (y unit2)))))
 
 
+;;強化アイテム作成
+(defun create-item-plus (itemnum)
+  (let ((item (item-make itemnum)))
+    (setf (damage item) (1+ (damage item))
+          (level item)  (1+ (level item))
+          (name item)   (concatenate 'string (name item) "+"
+                                              (write-to-string (level item))))
+    (push item (item *p*))))
+
+;;同じアイテムが5個あったら消す
+(defun remove-same-item (itemnum)
+  (setf (item *p*) (remove itemnum (item *p*) :key #'itemnum :count 5)))
+
+;;同じアイテムが何個あるかチェック
+(defun count-same-item (itemnum)
+  (count itemnum (item *p*) :key #'itemnum))
+
+
+
 ;;アイテムを入手
 (defun get-item (unit)
   (sound-play *chest-wav*) 
   ;;プレイヤーのアイテムリストに追加
   (let* ((item-data (if (> (random 10) 8)
-			+w_potion+
-			(weightpick (drop-item *donjon*))))
-	 (new-item (item-make item-data)))
+			                  +w_potion+ +w_ax+))
+			                  ;;(weightpick (drop-item *donjon*))))
+         (new-item (item-make item-data)))
     (setf (new new-item) t
-	  (getitem *p*) (make-instance 'itemtext :name (name new-item)
-				       :posx (- (posx unit)
-						(* (length (name new-item)) 10))
-				       :posy (posy unit)
-				       :maxy (- (posy unit) 20)))
-    (push new-item (item *p*))))
+	        (getitem *p*) (make-instance 'itemtext :name (name new-item)
+                                                 :posx (- (posx unit)
+                                                        (* (length (name new-item)) 10))
+				                                         :posy (posy unit)
+                                                 :maxy (- (posy unit) 20)))
+    (push new-item (item *p*))
+    (when (and (/= item-data +w_potion+)
+               (>= (count-same-item item-data) 5))
+      (remove-same-item item-data)
+      (create-item-plus item-data))))
     
 
 ;;ダメージ計算
@@ -517,6 +539,7 @@
   (save-temp-player-data *backup-player-data* *p*)
   (create-stage)
   (set-chara-init-position))
+
 
 
 (defun update-move-cursor (num)
@@ -1044,20 +1067,20 @@
 ;;unitに一番近いキャラ
 (defun near-chara (unit cells targets func pred)
   (let ((movecost (get-job-data (job unit) :movecost))
-	(start (list (x unit) (y unit)))) ;;自分の位置
+	      (start (list (x unit) (y unit)))) ;;自分の位置
     (first
      (sort (remove-if (lambda (u)
-			(let* ((goal (list (x u) (y u)))
-			       (block-cell (remove goal (get-block-cell targets)
-						   :test #'equal)))
-			  (or (eq (state u) :dead) ;;deadウニっと除外
-			      ;;多取り付けないウニっと除外
-			      (equal "hoge" (astar start goal cells movecost block-cell)))))
-			      
-			      ;;(> r-min (unit-dist unit u))))) ;;最小射程以下の敵消す
-		      targets)
-	   pred
-	   :key func))))
+                        (let* ((goal (list (x u) (y u)))
+                               (block-cell (remove goal (get-block-cell targets)
+                                                         :test #'equal)))
+                          (or (eq (state u) :dead) ;;deadウニっと除外
+                              ;;多取り付けないウニっと除外
+                              (equal "hoge" (astar start goal cells movecost block-cell)))))
+                              
+                              ;;(> r-min (unit-dist unit u))))) ;;最小射程以下の敵消す
+                      targets)
+	        pred
+	        :key func))))
 
 ;;敵の攻撃
 (defun enemy-attack (unit target hwnd)
@@ -1123,27 +1146,27 @@
      :when (eq (state u) :action)
      :do
        (let* ((r-min (rangemin (buki u)))
-	      (r-max (rangemax (buki u)))
-	      (target (get-target u))
-	      (dist (unit-dist u target)))
-	 (if (or (>= r-max dist r-min) ;;攻撃範囲に相手がいる
-		 (and (eq (atktype (buki u)) :heal) ;;ヒーラー
-		      (>= r-max dist 0)))
-	     (enemy-attack u target hwnd)
-	     (progn ;;移動後に攻撃範囲に相手がいたら攻撃
-	       (enemy-move u target r-min r-max (party *p*) (field *donjon*) hwnd)
-	       (setf target (get-target u)) ;;移動後ターゲット再設定
-	       (when (or (>= r-max (unit-dist u target) r-min)
-			 (and (eq (atktype (buki u)) :heal) ;;ヒーラー
-			      (>= r-max dist 0)))
-		 (enemy-attack u target hwnd))))
-	 (setf (movearea u) nil
-	       (canatkenemy u) nil
-	       (atkedarea u) nil
-	       (state u) :end)
-	 (when (gameover?)
-	   (setf (state *p*) :dead)
-	   (return)))))
+              (r-max (rangemax (buki u)))
+              (target (get-target u))
+              (dist (unit-dist u target)))
+        (if (or (>= r-max dist r-min) ;;攻撃範囲に相手がいる
+                (and (eq (atktype (buki u)) :heal) ;;ヒーラー
+                     (>= r-max dist 0)))
+            (enemy-attack u target hwnd)
+            (progn ;;移動後に攻撃範囲に相手がいたら攻撃
+              (enemy-move u target r-min r-max (party *p*) (field *donjon*) hwnd)
+              (setf target (get-target u)) ;;移動後ターゲット再設定
+              (when (or (>= r-max (unit-dist u target) r-min)
+                        (and (eq (atktype (buki u)) :heal) ;;ヒーラー
+                             (>= r-max dist 0)))
+                (enemy-attack u target hwnd))))
+        (setf (movearea u) nil
+              (canatkenemy u) nil
+              (atkedarea u) nil
+              (state u) :end)
+        (when (gameover?)
+          (setf (state *p*) :dead)
+          (return)))))
 
 
 ;;敵の行動
@@ -1162,7 +1185,7 @@
     (when getitem
       (decf (posy getitem) 1)
       (when (> (maxy getitem) (posy getitem))
-	(setf getitem nil)))))
+	      (setf getitem nil)))))
 
 
 ;;バトル更新
@@ -1292,7 +1315,7 @@
      (with-dc (hdc hwnd)
        (setf *hmemdc* (create-compatible-dc hdc)
              *hbitmap* (create-compatible-bitmap hdc (rect-right *c-rect*) (rect-bottom *c-rect*))
-	     *hogememdc* (create-compatible-dc hdc)
+             *hogememdc* (create-compatible-dc hdc)
              *hogebitmap* (create-compatible-bitmap hdc (rect-right *c-rect*) (rect-bottom *c-rect*)))
        (select-object *hmemdc* *hbitmap*)
        (select-object *hogememdc* *hogebitmap*))
@@ -1316,7 +1339,7 @@
      (setf (right *mouse*) nil))
     ((const +wm-mousemove+)
      (setf (y *mouse*) (/ (hiword lparam) *mouse-hosei-y*)
-	   (x *mouse*) (/ (loword lparam) *mouse-hosei-x*)))
+           (x *mouse*) (/ (loword lparam) *mouse-hosei-x*)))
     ((const +wm-keydown+)
      (moge-keydown hwnd wparam))
     ((const +wm-keyup+)
