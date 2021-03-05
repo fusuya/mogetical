@@ -6,7 +6,6 @@
 
 ;; (in-package mogetical)
 
-
 (loop :for file :in '("define.lisp" "name.lisp" "item.lisp"  "save.lisp" "mci.lisp"
                       "stage.lisp" "stage-data.lisp"
                       "astar.lisp" "render.lisp" "mogetical.lisp")
